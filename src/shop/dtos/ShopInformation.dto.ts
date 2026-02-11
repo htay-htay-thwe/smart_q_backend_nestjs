@@ -1,4 +1,21 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class TableTypeDto {
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  capacity: number;
+}
 
 export class ShopInformationDto {
   @IsString()
@@ -19,6 +36,10 @@ export class ShopInformationDto {
 
   @IsString()
   @IsNotEmpty()
+  password: string;
+
+  @IsString()
+  @IsNotEmpty()
   shop_img: string;
 
   @IsString()
@@ -33,7 +54,8 @@ export class ShopInformationDto {
   @IsNotEmpty()
   shopTypeId: string;
 
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  tableTypeIds: string[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TableTypeDto)
+  tableTypes: TableTypeDto[];
 }
