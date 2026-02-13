@@ -93,6 +93,8 @@ export class ShopsService {
         type: tableType.type,
         capacity: tableType.capacity,
         shopId: savedShop._id.toString(),
+        left_capacity: tableType.capacity.toString(),
+        bookTableId: null,
       });
       return newTableType.save();
     });

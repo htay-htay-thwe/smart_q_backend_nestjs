@@ -1,0 +1,271 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Queues } from '../schemas/Queues.schema';
+import { queueData } from './dtos/queueData.dto';
+import { Model, Types } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
+import { TableStatus } from '../schemas/TableStatus.schema';
+import { Shops } from '../schemas/Shops.schema';
+import { TableTypes } from '../schemas/TableTypes.schema';
+import { queue } from 'rxjs';
+import { AssignTableDto } from './dtos/assignTable.dto';
+import { QueueHistory } from '../schemas/QueueHistory.schema';
+
+@Injectable()
+export class QueuesService {
+  private readonly AVERAGE_SERVICE_TIME = 60; // 30 minutes per customer
+
+  constructor(
+    @InjectModel(Queues.name) private queuesModel: Model<Queues>,
+    @InjectModel(TableStatus.name) private tableStatusModel: Model<TableStatus>,
+    @InjectModel(Shops.name) private shopsModel: Model<Shops>,
+    @InjectModel(TableTypes.name) private tableTypesModel: Model<TableTypes>,
+    @InjectModel(QueueHistory.name)
+    private queueHistoryModel: Model<QueueHistory>,
+  ) {}
+
+  async createQueue(queueData: queueData) {
+    console.log('Creating queue with data:', queueData);
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    // First, let's verify the table type exists
+    const allTableTypes = await this.tableTypesModel
+      .find({ shopId: queueData.shop_id })
+      .lean();
+    console.log('All table types for this shop:', allTableTypes);
+
+    const totalTablesDoc = await this.tableTypesModel
+      .findOne({
+        _id: queueData.table_type_id,
+        shopId: queueData.shop_id,
+      })
+      .select('capacity');
+    console.log('totalTablesDoc', totalTablesDoc);
+
+    const totalTables = totalTablesDoc?.capacity || 0;
+
+    const occupiedTables = await this.tableStatusModel.countDocuments({
+      shop_id: queueData.shop_id,
+      table_type_id: queueData.table_type_id,
+      isActive: true,
+    });
+    console.log('totalTables', totalTables);
+    console.log('occupiedTables', occupiedTables);
+
+    const occupiedTblAtQueue = await this.queuesModel.countDocuments({
+      shop_id: queueData.shop_id,
+      table_type_id: queueData.table_type_id,
+      status: 'Ready to seat',
+    });
+    console.log('occupiedTblAtQueue', occupiedTblAtQueue);
+    const hasAvailableTable =
+      occupiedTables < totalTables && occupiedTblAtQueue < totalTables;
+
+    let estimatedWaitTime = 0;
+    let queueNumber = 0;
+    let status = 'Ready to seat';
+
+    if (!hasAvailableTable) {
+      const waitingAhead = await this.queuesModel.countDocuments({
+        shop_id: queueData.shop_id,
+        table_type_id: queueData.table_type_id,
+        status: 'waiting',
+      });
+
+      estimatedWaitTime = waitingAhead * this.AVERAGE_SERVICE_TIME;
+      status = 'waiting';
+      const lastQueue = await this.queuesModel
+        .findOne({
+          shop_id: queueData.shop_id,
+          table_type_id: queueData.table_type_id,
+          createdAt: { $gte: startOfDay },
+        })
+        .sort({ queue_number: -1 })
+        .select('queue_number')
+        .lean();
+      console.log('lastQueue', lastQueue);
+
+      queueNumber = lastQueue ? lastQueue.queue_number + 1 : 1;
+    }
+
+    const newQueue = new this.queuesModel({
+      ...queueData,
+      queue_number: queueNumber,
+      queue_qr: null,
+      status,
+      estimated_wait_time: estimatedWaitTime,
+      notification_sent: false,
+      userRequirements: queueData.userRequirements || '',
+    });
+
+    const savedQueue = await newQueue.save();
+
+    return savedQueue;
+  }
+
+  async getAllQueues() {
+    return await this.queuesModel
+      .find()
+      .populate('customer_id')
+      .populate('shop_id')
+      .sort({ queue_number: 1 })
+      .exec();
+  }
+
+  async getQueueById(id: string) {
+    return await this.queuesModel
+      .findById(id)
+      .populate('customer_id')
+      .populate('shop_id')
+      .exec();
+  }
+
+  async getQueuesByShop(shopId: string) {
+    return await this.queuesModel
+      .find({ shop_id: new Types.ObjectId(shopId) as any })
+      .populate('customer_id')
+      .populate('shop_id')
+      .sort({ queue_number: 1 })
+      .exec();
+  }
+
+  async getQueuesByCustomer(customerId: string) {
+    return await this.queuesModel
+      .find({ customer_id: new Types.ObjectId(customerId) as any })
+      .populate('customer_id')
+      .populate('shop_id')
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async generateQrCode(queueId: string, queueQr: string) {
+    const queue = await this.queuesModel.findById(queueId);
+    if (!queue) {
+      throw new NotFoundException('Queue not found');
+    }
+
+    queue.queue_qr = queueQr;
+    queue.status = 'qr-scanned';
+    queue.estimated_wait_time = 0;
+    await queue.save();
+
+    // TODO: Send notification to customer (SMS/Push/Email)
+    console.log(
+      `Notification sent to customer for queue ${queue.queue_number}`,
+    );
+    console.log(`QR Code generated: ${queueQr}`);
+
+    return await this.getQueueById(queueId);
+  }
+
+  async assignTable(assignTableData: AssignTableDto) {
+    const { queue_id, table_no, table_type_id, shop_id } = assignTableData;
+    console.log('Assigning table:', assignTableData);
+    const queue = await this.queuesModel.findById(queue_id);
+    if (!queue) {
+      throw new NotFoundException('Queue not found');
+    }
+
+    if (!queue.queue_qr) {
+      throw new Error('QR code not generated yet. Please generate QR first.');
+    }
+
+    queue.table_no = table_no;
+    queue.table_type_id = table_type_id;
+    queue.shop_id = shop_id;
+    queue.status = 'seated';
+    await queue.save();
+
+    const queueData = await this.tableStatusModel.create({
+      queue_id: queue_id,
+      shop_id: shop_id,
+      table_no: table_no,
+      table_type_id: table_type_id,
+      isActive: true,
+    });
+
+    await this.queueHistoryModel.create({
+      ...queue.toObject(),
+      completedAt: new Date(),
+    });
+
+    await this.queuesModel.findByIdAndDelete(queue_id);
+    return await this.getQueueById(queue_id);
+  }
+
+  async getTableStatus(shopId: string) {
+    console.log('Fetching table status for shop:', shopId);
+    const tables = await this.tableStatusModel
+      .find({ shop_id: shopId })
+      .populate({
+        path: 'queue_id',
+        populate: {
+          path: 'customer_id',
+          select: 'name phone email',
+        },
+      })
+      .lean();
+
+    console.log('Tables at shop:', tables);
+
+    // Group tables by table_type_id
+    const groupedByTableType = tables.reduce((acc, table) => {
+      const typeId = table.table_type_id.toString();
+
+      if (!acc[typeId]) {
+        acc[typeId] = {
+          table_type_id: typeId,
+          shop_id: table.shop_id,
+          available_tables: [],
+          occupied_tables: [],
+          total_tables: 0,
+          available_count: 0,
+          occupied_count: 0,
+        };
+      }
+
+      if (table.isActive && table.queue_id) {
+        acc[typeId].occupied_tables.push(table);
+        acc[typeId].occupied_count++;
+      } else {
+        acc[typeId].available_tables.push(table);
+        acc[typeId].available_count++;
+      }
+
+      acc[typeId].total_tables++;
+
+      return acc;
+    }, {});
+
+    console.log('Grouped table status:', groupedByTableType);
+    return Object.values(groupedByTableType);
+  }
+
+  async checkNearbyQueues(shopId: string) {
+    const waitingQueues = await this.queuesModel
+      .find({
+        shop_id: new Types.ObjectId(shopId) as any,
+        status: 'waiting',
+        notification_sent: false,
+      })
+      .sort({ queue_number: 1 })
+      .limit(3); // Check top 3 waiting
+
+    const readyCount = await this.queuesModel.countDocuments({
+      shop_id: new Types.ObjectId(shopId) as any,
+      status: { $in: ['ready', 'seated'] },
+    });
+
+    // If less than 3 people are ready/seated, notify the next ones
+    const notifyCount = Math.max(0, 3 - readyCount);
+    const queuesToNotify = waitingQueues.slice(0, notifyCount);
+
+    return queuesToNotify.map((queue) => ({
+      queue_id: queue._id,
+      queue_number: queue.queue_number,
+      customer_id: queue.customer_id,
+      should_notify: true,
+    }));
+  }
+}

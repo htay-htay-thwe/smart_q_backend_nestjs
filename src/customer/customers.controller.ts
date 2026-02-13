@@ -4,11 +4,17 @@ import { CustomersService } from './customers.service';
 import { CustomerInformationDto } from './dtos/CustomerInformation.dto';
 import { CustomerLoginDto } from './dtos/CustomerLogin.dto';
 import {
+  ChangeEmailDto,
   ChangePasswordDto,
   ChangePhoneNumberDto,
 } from './dtos/ChangePassword.dto';
 import { OtpService } from './otp.service';
-import { SendOtpDto, VerifyOtpDto } from './dtos/Otp.dto';
+import {
+  SendOtpDto,
+  SendOtpEmailDto,
+  VerifyOtpDto,
+  VerifyOtpEmailDto,
+} from './dtos/Otp.dto';
 
 @Controller('api/customers')
 export class CustomersController {
@@ -17,19 +23,39 @@ export class CustomersController {
     private otpService: OtpService,
   ) {}
 
-  @Post('send-otp')
-  async sendOtp(@Body() data: SendOtpDto) {
-    const result = await this.otpService.sendOtp(data.phoneNumber);
+  @Post('send-email-otp')
+  async sendEmailOtp(@Body() data: SendOtpEmailDto) {
+    const result = await this.otpService.sendOtpToEmail(data.email);
     return { data: result };
   }
 
-  @Post('verify-otp')
-  async verifyOtp(@Body() data: VerifyOtpDto) {
-    const isValid = await this.otpService.verifyOtp(data.phoneNumber, data.otp);
+  @Post('verify-email-otp')
+  async verifyEmailOtp(@Body() data: VerifyOtpEmailDto) {
+    const isValid = await this.otpService.verifyEmailOtp(data.email, data.otp);
     return {
       data: {
         verified: isValid,
-        message: 'OTP verified successfully',
+        message: 'Email OTP verified successfully',
+      },
+    };
+  }
+
+  @Post('send-phone-otp')
+  async sendPhoneOtp(@Body() data: SendOtpDto) {
+    const result = await this.otpService.sendOtpToPhone(data.phoneNumber);
+    return { data: result };
+  }
+
+  @Post('verify-phone-otp')
+  async verifyPhoneOtp(@Body() data: VerifyOtpDto) {
+    const isValid = await this.otpService.verifyPhoneOtp(
+      data.phoneNumber,
+      data.otp,
+    );
+    return {
+      data: {
+        verified: isValid,
+        message: 'Phone OTP verified successfully',
       },
     };
   }
@@ -62,12 +88,7 @@ export class CustomersController {
     @Body() loginData: CustomerLoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.customersService.loginCustomer(
-      loginData.phoneNumber,
-
-      loginData.otp,
-      loginData.password,
-    );
+    const result = await this.customersService.loginCustomer(loginData);
 
     // Set token in HTTP-only cookie
     res.cookie('auth_token', result.token, {
@@ -103,6 +124,17 @@ export class CustomersController {
       changePhoneNumberData.newPhoneNumber,
       changePhoneNumberData.oldOtp,
       changePhoneNumberData.newOtp,
+    );
+    return { data: result };
+  }
+
+  @Post('change-email')
+  async changeEmail(@Body() changeEmailData: ChangeEmailDto) {
+    const result = await this.customersService.changeEmail(
+      changeEmailData.oldEmail,
+      changeEmailData.newEmail,
+      changeEmailData.oldOtp,
+      changeEmailData.newOtp,
     );
     return { data: result };
   }

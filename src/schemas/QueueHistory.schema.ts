@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { Shops } from './Shops.schema';
-import { Customers } from './Customers.schema';
 
 @Schema({ timestamps: true })
-export class Queues {
+export class QueueHistory {
   @Prop({ required: true })
   queue_number: number;
 
@@ -42,6 +40,9 @@ export class Queues {
     required: true,
   })
   customer_id: string;
+
+  @Prop({ required: true })
+  completedAt: Date;
 }
 
-export const QueueSchema = SchemaFactory.createForClass(Queues);
+export const QueueHistorySchema = SchemaFactory.createForClass(QueueHistory);

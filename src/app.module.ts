@@ -6,6 +6,7 @@ import { ShopTypesModule } from './shop-types/shop-types.module';
 import { TableTypesModule } from './table-types/table-types.module';
 import { CustomersModule } from './customer/customers.module';
 import { AuthModule } from './auth/auth.module';
+import { QueuesModule } from './queue/queues.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './auth/auth.module';
     TableTypesModule,
     CustomersModule,
     AuthModule,
+    QueuesModule,
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

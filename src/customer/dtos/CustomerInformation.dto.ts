@@ -5,6 +5,10 @@ export class CustomerInformationDto {
   @IsNotEmpty()
   name: string;
 
+  @IsNotEmpty()
+  @IsString()
+  email: string;
+  
   @IsNumber()
   @IsNotEmpty()
   phoneNumber: number;

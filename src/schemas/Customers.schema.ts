@@ -6,6 +6,9 @@ export class Customers {
   name: string;
 
   @Prop({ required: true, unique: true })
+  email: string;
+
+  @Prop({ required: true, unique: true })
   phoneNumber: number;
 
   @Prop({ required: true, select: false })

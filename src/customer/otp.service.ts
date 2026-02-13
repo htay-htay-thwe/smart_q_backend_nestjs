@@ -78,12 +78,6 @@ export class OtpService {
     };
   }
 
-  async sendOtp(
-    phoneNumber: number,
-  ): Promise<{ success: boolean; message: string }> {
-    return this.sendOtpToPhone(phoneNumber);
-  }
-
   async verifyPhoneOtp(phoneNumber: number, otp: string): Promise<boolean> {
     const otpRecord = await this.otpModel.findOne({
       phoneNumber,
@@ -134,10 +128,6 @@ export class OtpService {
     await otpRecord.save();
 
     return true;
-  }
-
-  async verifyOtp(phoneNumber: number, otp: string): Promise<boolean> {
-    return this.verifyPhoneOtp(phoneNumber, otp);
   }
 
   async isPhoneVerified(phoneNumber: number): Promise<boolean> {

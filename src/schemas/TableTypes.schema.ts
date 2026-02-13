@@ -10,5 +10,6 @@ export class TableTypes {
 
   @Prop({ required: true })
   shopId: string;
+  _id: any;
 }
 export const TableTypesSchema = SchemaFactory.createForClass(TableTypes);

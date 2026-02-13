@@ -13,6 +13,7 @@ import { CustomerInformationDto } from './dtos/CustomerInformation.dto';
 import { AuthService } from '../auth/auth.service';
 import { OtpService } from './otp.service';
 import * as bcrypt from 'bcrypt';
+import { CustomerLoginDto } from './dtos/CustomerLogin.dto';
 
 @Injectable()
 export class CustomersService {
@@ -23,6 +24,17 @@ export class CustomersService {
   ) {}
 
   async registerCustomer(userData: CustomerInformationDto) {
+    // Check if email is verified
+    const isEmailVerified = await this.otpService.isEmailVerified(
+      userData.email,
+    );
+
+    if (!isEmailVerified) {
+      throw new BadRequestException(
+        'Email not verified. Please verify with OTP first.',
+      );
+    }
+
     // Check if phone is verified
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const isVerified = await this.otpService.isPhoneVerified(
@@ -32,6 +44,17 @@ export class CustomersService {
     if (!isVerified) {
       throw new BadRequestException(
         'Phone number not verified. Please verify with OTP first.',
+      );
+    }
+
+    // Check if email already exists
+    const existingShop = await this.customersModel.findOne({
+      email: userData.email,
+    });
+
+    if (existingShop) {
+      throw new ConflictException(
+        'Email already exists. Please use a different email.',
       );
     }
 
@@ -48,6 +71,7 @@ export class CustomersService {
 
     const newCustomer = new this.customersModel({
       name: userData.name,
+      email: userData.email,
       phoneNumber: userData.phoneNumber,
       password: await bcrypt.hash(userData.password, 10),
       profileImg: userData.profileImg || '',
@@ -56,12 +80,7 @@ export class CustomersService {
 
     const savedCustomer = await newCustomer.save();
 
-    const token = this.authService.generateToken({
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      id: savedCustomer._id.toString(),
-      email: savedCustomer.phoneNumber.toString(),
-      type: 'customer',
-    });
+    const token = this.generateTokenForCustomer(savedCustomer);
 
     return {
       customer: savedCustomer,
@@ -83,24 +102,20 @@ export class CustomersService {
     return this.authService.generateToken({
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       id: customer._id.toString(),
-      email: customer.phoneNumber.toString(),
+      email: customer.email,
       type: 'customer',
     });
   }
 
-  async loginCustomer(phoneNumber: number, otp: string, password: string) {
-    // Verify OTP first
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const isOtpValid = await this.otpService.verifyPhoneOtp(phoneNumber, otp);
-
-    if (!isOtpValid) {
-      throw new UnauthorizedException('Invalid OTP.');
-    }
-
+  async loginCustomer(loginData: CustomerLoginDto) {
     // Find customer with password field
-    const customer = await this.customersModel
-      .findOne({ phoneNumber })
-      .select('+password');
+    const customer = loginData.phoneNumber
+      ? await this.customersModel
+          .findOne({ phoneNumber: loginData.phoneNumber })
+          .select('+password')
+      : await this.customersModel
+          .findOne({ email: loginData.email })
+          .select('+password');
 
     if (!customer) {
       throw new UnauthorizedException('Invalid phone number or password.');
@@ -114,7 +129,10 @@ export class CustomersService {
     }
 
     // Compare password
-    const isPasswordValid = await bcrypt.compare(password, customer.password);
+    const isPasswordValid = await bcrypt.compare(
+      loginData.password,
+      customer.password,
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid phone number or password.');
@@ -224,6 +242,56 @@ export class CustomersService {
     return {
       data: customerData,
       message: 'Phone number changed successfully.',
+    };
+  }
+
+  async changeEmail(
+    oldEmail: string,
+    newEmail: string,
+    oldOtp: string,
+    newOtp: string,
+  ) {
+    // Verify OTP for old email
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const isOldOtpValid = await this.otpService.verifyEmailOtp(
+      oldEmail,
+      oldOtp,
+    );
+    if (!isOldOtpValid) {
+      throw new UnauthorizedException('Invalid OTP for old email.');
+    }
+
+    // Verify OTP for new email
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const isNewOtpValid = await this.otpService.verifyEmailOtp(
+      newEmail,
+      newOtp,
+    );
+    if (!isNewOtpValid) {
+      throw new UnauthorizedException('Invalid OTP for new email.');
+    }
+
+    const customer = await this.customersModel.findOne({
+      email: oldEmail,
+    });
+    if (!customer) {
+      throw new NotFoundException('Customer not found.');
+    }
+
+    // Check if new email is already taken
+    const existingCustomer = await this.customersModel.findOne({
+      email: newEmail,
+    });
+    if (existingCustomer) {
+      throw new ConflictException('New email is already registered.');
+    }
+
+    customer.email = newEmail;
+    await customer.save();
+    const customerData = await this.customersModel.findById(customer._id);
+    return {
+      data: customerData,
+      message: 'Email changed successfully.',
     };
   }
 }

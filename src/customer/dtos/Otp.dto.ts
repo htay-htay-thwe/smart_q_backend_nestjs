@@ -15,3 +15,19 @@ export class VerifyOtpDto {
   @IsNotEmpty()
   otp: string;
 }
+
+export class SendOtpEmailDto {
+  @IsString()
+  @IsNotEmpty()
+  email: string;
+}
+
+export class VerifyOtpEmailDto {
+  @IsString()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}

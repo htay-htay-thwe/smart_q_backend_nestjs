@@ -35,3 +35,21 @@ export class ChangePhoneNumberDto {
   @IsNotEmpty()
   newOtp: string;
 }
+
+export class ChangeEmailDto {
+  @IsString()
+  @IsNotEmpty()
+  oldEmail: string;
+
+  @IsString()
+  @IsNotEmpty()
+  newEmail: string;
+
+  @IsString()
+  @IsNotEmpty()
+  oldOtp: string;
+
+  @IsString()
+  @IsNotEmpty()
+  newOtp: string;
+}
