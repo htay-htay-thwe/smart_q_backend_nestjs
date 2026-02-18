@@ -1,12 +1,12 @@
 # Postman Testing Guide - Smart Queue Backend
 
 ## Setup
-Base URL: `http://localhost:3000`
+Base URL: `http://localhost:4000`
 
 ---
 
 ## Step 1: Create Shop Types
-**Endpoint:** `POST http://localhost:3000/shop-types`
+**Endpoint:** `POST http://localhost:4000/shop-types`
 
 ### Request Body (JSON):
 ```json
@@ -36,7 +36,7 @@ Base URL: `http://localhost:3000`
 ---
 
 ## Step 2: Get All Shop Types (Optional)
-**Endpoint:** `GET http://localhost:3000/shop-types`
+**Endpoint:** `GET http://localhost:4000/shop-types`
 
 This returns all shop types with their IDs.
 
@@ -47,7 +47,7 @@ This returns all shop types with their IDs.
 **IMPORTANT:** Before registering a shop, you must verify both email and phone number with OTP!
 
 ### Step 3a: Verify Email with OTP
-**Endpoint:** `POST http://localhost:3000/api/shops/send-email-otp`
+**Endpoint:** `POST http://localhost:4000/api/shops/send-email-otp`
 
 **Request Body:**
 ```json
@@ -72,7 +72,7 @@ OTP for email goldendragorn@restaurant.com: 123456
 ```
 
 **Verify Email OTP:**  
-**Endpoint:** `POST http://localhost:3000/api/shops/verify-email-otp`
+**Endpoint:** `POST http://localhost:4000/api/shops/verify-email-otp`
 
 **Request Body:**
 ```json
@@ -85,7 +85,7 @@ OTP for email goldendragorn@restaurant.com: 123456
 ---
 
 ### Step 3b: Verify Phone with OTP
-**Endpoint:** `POST http://localhost:3000/api/shops/send-phone-otp`
+**Endpoint:** `POST http://localhost:4000/api/shops/send-phone-otp`
 
 **Request Body:**
 ```json
@@ -95,7 +95,7 @@ OTP for email goldendragorn@restaurant.com: 123456
 ```
 
 **Verify Phone OTP:**  
-**Endpoint:** `POST http://localhost:3000/api/shops/verify-phone-otp`
+**Endpoint:** `POST http://localhost:4000/api/shops/verify-phone-otp`
 
 **Request Body:**
 ```json
@@ -108,46 +108,74 @@ OTP for email goldendragorn@restaurant.com: 123456
 ---
 
 ### Step 3c: Register Shop
-**Endpoint:** `POST http://localhost:3000/api/shops/register`
+**Endpoint:** `POST http://localhost:4000/api/shops/register`
 
 Now you can register a shop after both email and phone are verified!
 
-### Request Body (JSON):
-```json
-{
-  "name": "Golden Dragon Restaurant",
-  "address": "123 Main Street, Yangon",
-  "phoneNumber": 959123456789,
-  "email": "goldendragorn@restaurant.com",
-  "password": "SecurePassword123!",
-  "shop_img": "https://example.com/images/golden-dragon.jpg",
-  "shopTitle": "Best Chinese Food in Town",
-  "descirption": "Authentic Chinese cuisine with over 20 years of experience",
-  "shopTypeId": "65f123abc456def789012345",
-  "tableTypes": [
-    {
-      "type": "2-Seater",
-      "capacity": 2
-    },
-    {
-      "type": "4-Seater",
-      "capacity": 4
-    },
-    {
-      "type": "6-Seater",
-      "capacity": 6
-    },
-    {
-      "type": "VIP Room",
-      "capacity": 10
-    }
-  ]
-}
-```
+**Content-Type:** `multipart/form-data`
 
-**Replace:**
-- `shopTypeId` with the actual `_id` from Step 1
-- `tableTypes` array contains the table configurations for this specific shop (no temporary IDs needed!)
+### Using Postman:
+1. Set request type to `POST`
+2. Select `Body` → `form-data`
+3. Add the following fields:
+
+| Key | Type | Value |
+|-----|------|-------|
+| name | Text | Golden Dragon Restaurant |
+| fullAddress | Text | 123 Main Street, Yangon |
+| lat | Text | 16.8661 |
+| lng | Text | 96.1951 |
+| phoneNumber | Text | 959123456789 |
+| email | Text | goldendragorn@restaurant.com |
+| password | Text | SecurePassword123! |
+| shop_img | File | [Select image file from your computer] |
+| description | Text | Authentic Chinese cuisine with over 20 years of experience |
+| shopTypeId | Text | 65f123abc456def789012345 |
+| tableTypes[0][type] | Text | 2-Seater |
+| tableTypes[0][capacity] | Text | 2 |
+| tableTypes[1][type] | Text | 4-Seater |
+| tableTypes[1][capacity] | Text | 4 |
+| tableTypes[2][type] | Text | 6-Seater |
+| tableTypes[2][capacity] | Text | 6 |
+| tableTypes[3][type] | Text | VIP Room |
+| tableTypes[3][capacity] | Text | 10 |
+
+**Notes:**
+- `shop_img` is now a **File field** - select an image from your computer (jpg, png, etc.)
+- The image will be automatically uploaded to Cloudinary
+- If you don't want to upload an image, you can omit the `shop_img` field
+- `shopTypeId` should be the actual `_id` from Step 1
+
+### Frontend (JavaScript/React Example):
+```javascript
+const formData = new FormData();
+formData.append('name', 'Golden Dragon Restaurant');
+formData.append('fullAddress', '123 Main Street, Yangon');
+formData.append('lat', '16.8661');
+formData.append('lng', '96.1951');
+formData.append('phoneNumber', '959123456789');
+formData.append('email', 'goldendragorn@restaurant.com');
+formData.append('password', 'SecurePassword123!');
+formData.append('shop_img', imageFile); // File from input type="file"
+formData.append('description', 'Authentic Chinese cuisine with over 20 years of experience');
+formData.append('shopTypeId', '65f123abc456def789012345');
+
+// Table types as array
+formData.append('tableTypes[0][type]', '2-Seater');
+formData.append('tableTypes[0][capacity]', '2');
+formData.append('tableTypes[1][type]', '4-Seater');
+formData.append('tableTypes[1][capacity]', '4');
+formData.append('tableTypes[2][type]', '6-Seater');
+formData.append('tableTypes[2][capacity]', '6');
+formData.append('tableTypes[3][type]', 'VIP Room');
+formData.append('tableTypes[3][capacity]', '10');
+
+const response = await fetch('http://localhost:4000/api/shops/register', {
+  method: 'POST',
+  body: formData,
+  // Don't set Content-Type header - browser will set it automatically with boundary
+});
+```
 
 ### Response Example:
 ```json
@@ -159,7 +187,6 @@ Now you can register a shop after both email and phone are verified!
     "phoneNumber": "959123456789",
     "email": "goldendragorn@restaurant.com",
     "shopImg": "https://example.com/images/golden-dragon.jpg",
-    "shopTitle": "Best Chinese Food in Town",
     "description": "Authentic Chinese cuisine with over 20 years of experience",
     "shopTypes": "65f123abc456def789012345",
     "tableTypes": [
@@ -175,7 +202,7 @@ Now you can register a shop after both email and phone are verified!
 ---
 
 ## Step 6: Get All Shops with Populated Data
-**Endpoint:** `GET http://localhost:3000/api/shops`
+**Endpoint:** `GET http://localhost:4000/api/shops`
 
 > **Requires Authentication** — Add `Authorization: Bearer <token>` header.
 
@@ -253,7 +280,7 @@ Alternatively, if you enable "Send cookies" in Postman, the `auth_token` cookie 
 
 ## Shop Login (Email + Password)
 
-**Endpoint:** `POST http://localhost:3000/api/shops/login`
+**Endpoint:** `POST http://localhost:4000/api/shops/login`
 
 Shops login using email and password (NO OTP required for login).
 
@@ -296,7 +323,7 @@ Customer registration uses OTP verification for both phone number and email. The
 6. Login with OTP + password
 
 ### Step 1: Send Phone OTP
-**Endpoint:** `POST http://localhost:3000/api/customers/send-phone-otp`
+**Endpoint:** `POST http://localhost:4000/api/customers/send-phone-otp`
 
 **Request Body (JSON):**
 ```json
@@ -325,7 +352,7 @@ OTP for 09455555555: 123456
 ---
 
 ### Step 2: Verify Phone OTP
-**Endpoint:** `POST http://localhost:3000/api/customers/verify-phone-otp`
+**Endpoint:** `POST http://localhost:4000/api/customers/verify-phone-otp`
 
 **Request Body (JSON):**
 ```json
@@ -350,7 +377,7 @@ OTP for 09455555555: 123456
 ---
 
 ### Step 3: Send Email OTP
-**Endpoint:** `POST http://localhost:3000/api/customers/send-email-otp`
+**Endpoint:** `POST http://localhost:4000/api/customers/send-email-otp`
 
 **Request Body (JSON):**
 ```json
@@ -377,7 +404,7 @@ OTP for email htaythwe@gmail.com: 123456
 ---
 
 ### Step 4: Verify Email OTP
-**Endpoint:** `POST http://localhost:3000/api/customers/verify-email-otp`
+**Endpoint:** `POST http://localhost:4000/api/customers/verify-email-otp`
 
 **Request Body (JSON):**
 ```json
@@ -400,7 +427,7 @@ OTP for email htaythwe@gmail.com: 123456
 ---
 
 ### Step 5: Register Customer
-**Endpoint:** `POST http://localhost:3000/api/customers/register`
+**Endpoint:** `POST http://localhost:4000/api/customers/register`
 
 **Request Body (JSON):**
 ```json
@@ -448,7 +475,7 @@ OTP for email htaythwe@gmail.com: 123456
 ---
 
 ### Step 6: Customer Login (Phone or Email + OTP + Password)
-**Endpoint:** `POST http://localhost:3000/api/customers/login`
+**Endpoint:** `POST http://localhost:4000/api/customers/login`
 
 Customers login requires OTP verification AND password (2-factor authentication).
 
@@ -621,7 +648,7 @@ When an error occurs, the API returns:
 ## Customer Account Management
 
 ### Change Customer Password
-**Endpoint:** `POST http://localhost:3000/api/customers/change-password`
+**Endpoint:** `POST http://localhost:4000/api/customers/change-password`
 
 > **Requires Authentication** — Add `Authorization: Bearer <token>` header.
 
@@ -660,7 +687,7 @@ Change password requires OTP verification for security.
 ---
 
 ### Change Customer Phone Number
-**Endpoint:** `POST http://localhost:3000/api/customers/change-phone-number`
+**Endpoint:** `POST http://localhost:4000/api/customers/change-phone-number`
 
 > **Requires Authentication** — Add `Authorization: Bearer <token>` header.
 
@@ -713,10 +740,121 @@ Change phone number requires OTP verification on BOTH old and new phone numbers 
 
 ---
 
+### Change Customer Email
+**Endpoint:** `POST http://localhost:4000/api/customers/change-email`
+
+Change email requires OTP verification on BOTH old and new email addresses (no password needed).
+
+**Steps:**
+1. Send OTP to OLD email → Check console for OTP
+2. Send OTP to NEW email → Check console for OTP
+3. Submit change request with both OTPs
+
+**Request Body (JSON):**
+```json
+{
+  "oldEmail": "htaythwe@gmail.com",
+  "newEmail": "newemail@gmail.com",
+  "oldOtp": "123456",
+  "newOtp": "654321"
+}
+```
+
+**Response Example:**
+```json
+{
+  "data": {
+    "data": {
+      "_id": "65fabc123...",
+      "name": "Htay Thwe",
+      "email": "newemail@gmail.com",
+      "phoneNumber": 9455555555,
+      "profileImg": "https://example.com/profile.jpg",
+      "isVerified": true
+    },
+    "message": "Email changed successfully."
+  }
+}
+```
+
+**Required Fields:**
+- `oldEmail`: Current email address
+- `newEmail`: New email address (must be available)
+- `oldOtp`: OTP sent to old email
+- `newOtp`: OTP sent to new email
+
+**Flow:**
+```
+1. Send OTP to old email htaythwe@gmail.com → OTP: 123456
+2. Send OTP to new email newemail@gmail.com → OTP: 654321
+3. Submit change request with both OTPs
+4. Email updated successfully ✅
+```
+
+---
+
+### Change Customer Profile Image
+**Endpoint:** `PATCH http://localhost:4000/api/customers/change-profileImage`
+
+Update the customer's profile image by uploading a new image file to Cloudinary.
+
+**Content-Type:** `multipart/form-data`
+
+### Using Postman:
+1. Set request type to `PATCH`
+2. Select `Body` → `form-data`
+3. Add the following fields:
+
+| Key | Type | Value |
+|-----|------|-------|
+| customer_id | Text | 65fabc123def456789012345 |
+| image | File | [Select new image file] |
+
+### Frontend (JavaScript/React Example):
+```javascript
+const formData = new FormData();
+formData.append('customer_id', '65fabc123def456789012345');
+formData.append('image', imageFile); // File from input type="file"
+
+const response = await fetch('http://localhost:4000/api/customers/change-profileImage', {
+  method: 'PATCH',
+  body: formData,
+});
+
+const data = await response.json();
+console.log(data.data); // Updated customer with new Cloudinary image URL
+```
+
+**Response Example:**
+```json
+{
+  "data": {
+    "_id": "65fabc123...",
+    "name": "Htay Thwe",
+    "email": "htaythwe@gmail.com",
+    "phoneNumber": 9455555555,
+    "profileImg": "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/shops/xyz789.jpg",
+    "isVerified": true
+  },
+  "message": "Customer profile image changed successfully."
+}
+```
+
+**Required Fields:**
+- `customer_id`: Customer's ObjectId
+- `image`: Image file (jpg, png, etc.)
+
+**Notes:**
+- Image is automatically uploaded to Cloudinary
+- Returns the Cloudinary secure URL in `profileImg` field
+- Old image URL is replaced with new one
+
+---
+
 ## Shop Account Management
 
 ### Change Shop Password
-**Endpoint:** `POST http://localhost:3000/api/shops/change-password`
+**Endpoint:** `POST http://localhost:4000/api/shops/change-password`
 
 > **Requires Authentication** — Add `Authorization: Bearer <token>` header.
 
@@ -757,7 +895,7 @@ Change password requires old password verification + phone OTP.
 ---
 
 ### Change Shop Email
-**Endpoint:** `POST http://localhost:3000/api/shops/change-email`
+**Endpoint:** `POST http://localhost:4000/api/shops/change-email`
 
 > **Requires Authentication** — Add `Authorization: Bearer <token>` header.
 
@@ -811,7 +949,7 @@ Change email requires OTP verification on BOTH old and new email addresses (no p
 ---
 
 ### Change Shop Phone Number
-**Endpoint:** `POST http://localhost:3000/api/shops/change-phone-number`
+**Endpoint:** `POST http://localhost:4000/api/shops/change-phone-number`
 
 > **Requires Authentication** — Add `Authorization: Bearer <token>` header.
 
@@ -864,6 +1002,144 @@ Change phone number requires OTP verification on BOTH old and new phone numbers 
 
 ---
 
+### Change Shop Address
+**Endpoint:** `PATCH http://localhost:4000/api/shops/change-address`
+
+Update shop's physical address with geolocation coordinates.
+
+**Request Body (JSON):**
+```json
+{
+  "shop_id": "65fabc123def456789012345",
+  "fullAddress": "456 New Street, Downtown, Yangon",
+  "lat": 16.8661,
+  "lng": 96.1951
+}
+```
+
+**Response Example:**
+```json
+{
+  "data": {
+    "data": {
+      "_id": "65fabc123...",
+      "name": "Golden Dragon Restaurant",
+      "email": "goldendragorn@restaurant.com",
+      "address": {
+        "fullAddress": "456 New Street, Downtown, Yangon",
+        "location": {
+          "type": "Point",
+          "coordinates": [96.1951, 16.8661]
+        }
+      },
+      "shopTitle": "Best Chinese Food in Town"
+    },
+    "message": "Address changed successfully."
+  }
+}
+```
+
+**Required Fields:**
+- `shop_id`: Shop's ObjectId
+- `fullAddress`: Complete address string
+- `lat`: Latitude (decimal degrees)
+- `lng`: Longitude (decimal degrees)
+
+**Note:** Coordinates are stored as [longitude, latitude] in GeoJSON format.
+
+---
+
+### Change Shop Name
+**Endpoint:** `PATCH http://localhost:4000/api/shops/change-shopName`
+
+Update the shop's display title/name.
+
+**Request Body (JSON):**
+```json
+{
+  "shop_id": "65fabc123def456789012345",
+  "shopTitle": "Premium Chinese Cuisine"
+}
+```
+
+**Response Example:**
+```json
+{
+  "data": {
+    "data": {
+      "_id": "65fabc123...",
+      "name": "Golden Dragon Restaurant",
+      "email": "goldendragorn@restaurant.com",
+      "shopTitle": "Premium Chinese Cuisine"
+    },
+    "message": "Shop Name changed successfully."
+  }
+}
+```
+
+**Required Fields:**
+- `shop_id`: Shop's ObjectId
+- `shopTitle`: New shop title/name
+
+---
+
+### Change Shop Profile Image
+**Endpoint:** `PATCH http://localhost:4000/api/shops/change-profileImage`
+
+Update the shop's profile image by uploading a new image file to Cloudinary.
+
+**Content-Type:** `multipart/form-data`
+
+### Using Postman:
+1. Set request type to `PATCH`
+2. Select `Body` → `form-data`
+3. Add the following fields:
+
+| Key | Type | Value |
+|-----|------|-------|
+| shop_id | Text | 65fabc123def456789012345 |
+| image | File | [Select new image file] |
+
+### Frontend (JavaScript/React Example):
+```javascript
+const formData = new FormData();
+formData.append('shop_id', '65fabc123def456789012345');
+formData.append('image', imageFile); // File from input type="file"
+
+const response = await fetch('http://localhost:4000/api/shops/change-profileImage', {
+  method: 'PATCH',
+  body: formData,
+});
+
+const data = await response.json();
+console.log(data.data); // Updated shop with new Cloudinary image URL
+```
+
+**Response Example:**
+```json
+{
+  "data": {
+    "_id": "65fabc123...",
+    "name": "Golden Dragon Restaurant",
+    "email": "goldendragorn@restaurant.com",
+    "shopImg": "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/shops/abc123.jpg",
+    "shopTitle": "Premium Chinese Cuisine"
+  },
+  "message": "Shop Image changed successfully."
+}
+```
+
+**Required Fields:**
+- `shop_id`: Shop's ObjectId
+- `image`: Image file (jpg, png, etc.)
+
+**Notes:**
+- Image is automatically uploaded to Cloudinary
+- Returns the Cloudinary secure URL in `shopImg` field
+- Old image URL is replaced with new one
+
+---
+
 ## Queue Management
 
 ### Queue Workflow
@@ -903,7 +1179,7 @@ Change phone number requires OTP verification on BOTH old and new phone numbers 
 ---
 
 ### Create Queue
-**Endpoint:** `POST http://localhost:3000/api/queues/create`
+**Endpoint:** `POST http://localhost:4000/api/queues/create`
 
 Customer joins the queue. System automatically:
 - Assigns queue number (sequential, resets daily)
@@ -1003,41 +1279,12 @@ Customer joins the queue. System automatically:
 
 ---
 
-### Get Queue Position
-**Endpoint:** `GET http://localhost:3000/api/queues/position/:queueId`
-
-Check current position in queue and updated wait time.
-
-**Example:** `GET http://localhost:3000/api/queues/position/65fabc789def012345678901`
-
-**Response Example:**
-```json
-{
-  "data": {
-    "queue_number": 15,
-    "position": 4,
-    "ahead_count": 3,
-    "estimated_wait_time": 90,
-    "status": "waiting"
-  }
-}
-```
-
-**Response Fields:**
-- `queue_number`: Your queue number
-- `position`: Current position in line
-- `ahead_count`: How many people are ahead
-- `estimated_wait_time`: Minutes until your turn
-- `status`: Current status
-
----
-
 ### Check Nearby Queues (Admin)
-**Endpoint:** `GET http://localhost:3000/api/queues/check-nearby/:shopId`
+**Endpoint:** `GET http://localhost:4000/api/queues/check-nearby/:shopId`
 
 Check which customers should be notified (their turn is coming soon).
 
-**Example:** `GET http://localhost:3000/api/queues/check-nearby/65fabc123def456789012345`
+**Example:** `GET http://localhost:4000/api/queues/check-nearby/65fabc123def456789012345`
 
 **Response Example:**
 ```json
@@ -1065,7 +1312,7 @@ Check which customers should be notified (their turn is coming soon).
 ---
 
 ### Generate QR Code (Admin)
-**Endpoint:** `PATCH http://localhost:3000/api/queues/generate-qr`
+**Endpoint:** `PATCH http://localhost:4000/api/queues/generate-qr`
 
 Admin generates QR code when customer's turn arrives. This:
 - Creates unique QR code
@@ -1115,7 +1362,7 @@ QR Code generated: QR-123e4567-e89b-12d3-a456-426614174000
 ---
 
 ### Assign Table (Admin)
-**Endpoint:** `PATCH http://localhost:3000/api/queues/assign-table`
+**Endpoint:** `PATCH http://localhost:4000/api/queues/assign-table`
 
 After customer scans QR code at shop, admin assigns table.
 
@@ -1159,11 +1406,11 @@ After customer scans QR code at shop, admin assigns table.
 ---
 
 ### Get Queues by Shop
-**Endpoint:** `GET http://localhost:3000/api/queues/shop/:shopId`
+**Endpoint:** `GET http://localhost:4000/api/queues/shop/:shopId`
 
 Get all queues for a shop, sorted by queue number.
 
-**Example:** `GET http://localhost:3000/api/queues/shop/65fabc123def456789012345`
+**Example:** `GET http://localhost:4000/api/queues/shop/65fabc123def456789012345`
 
 **Response Example:**
 ```json
@@ -1195,11 +1442,11 @@ Get all queues for a shop, sorted by queue number.
 ---
 
 ### Get Queues by Customer
-**Endpoint:** `GET http://localhost:3000/api/queues/customer/:customerId`
+**Endpoint:** `GET http://localhost:4000/api/queues/customer/:customerId`
 
 Get all queues for a customer (newest first).
 
-**Example:** `GET http://localhost:3000/api/queues/customer/65fabc456def789012345678`
+**Example:** `GET http://localhost:4000/api/queues/customer/65fabc456def789012345678`
 
 **Response Example:**
 ```json
@@ -1221,18 +1468,80 @@ Get all queues for a customer (newest first).
 ---
 
 ### Get All Queues
-**Endpoint:** `GET http://localhost:3000/api/queues/all`
+**Endpoint:** `GET http://localhost:4000/api/queues/all`
 
 Get all queues across all shops.
 
 ---
 
 ### Get Queue by ID
-**Endpoint:** `GET http://localhost:3000/api/queues/:id`
+**Endpoint:** `GET http://localhost:4000/api/queues/:id`
 
 Get specific queue details.
 
-**Example:** `GET http://localhost:3000/api/queues/65fabc789def012345678901`
+**Example:** `GET http://localhost:4000/api/queues/65fabc789def012345678901`
+
+---
+
+### Get Table Status (Admin)
+**Endpoint:** `GET http://localhost:4000/api/queues/get-table-status/:shopId`
+
+Get the status of all tables at a shop, grouped by table type.
+
+**Example:** `GET http://localhost:4000/api/queues/get-table-status/65fabc123def456789012345`
+
+**Response Example:**
+```json
+{
+  "data": [
+    {
+      "table_type_id": "65f789def012345abc678901",
+      "shop_id": "65fabc123def456789012345",
+      "available_tables": [
+        {
+          "_id": "65ftable01...",
+          "table_number": "A-01",
+          "table_type_id": "65f789def012345abc678901",
+          "shop_id": "65fabc123def456789012345",
+          "isActive": false,
+          "queue_id": null
+        }
+      ],
+      "occupied_tables": [
+        {
+          "_id": "65ftable02...",
+          "table_number": "A-02",
+          "table_type_id": "65f789def012345abc678901",
+          "shop_id": "65fabc123def456789012345",
+          "isActive": true,
+          "queue_id": {
+            "_id": "65fqueue01...",
+            "queue_number": 15,
+            "customer_id": {
+              "name": "Htay Thwe",
+              "phone": 9455555555
+            }
+          }
+        }
+      ],
+      "total_tables": 10,
+      "available_count": 6,
+      "occupied_count": 4
+    }
+  ]
+}
+```
+
+**Response Fields:**
+- `table_type_id`: ID of the table type (e.g., 2-Seater, 4-Seater)
+- `shop_id`: Shop ObjectId
+- `available_tables`: Array of tables that are not currently occupied
+- `occupied_tables`: Array of tables currently in use (with customer info)
+- `total_tables`: Total number of tables of this type
+- `available_count`: Number of available tables
+- `occupied_count`: Number of occupied tables
+
+**Use Case:** Admin dashboard to see real-time table availability and occupancy.
 
 ---
 

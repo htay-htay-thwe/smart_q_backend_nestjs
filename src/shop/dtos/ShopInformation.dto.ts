@@ -4,6 +4,8 @@ import {
   IsString,
   ValidateNested,
   IsArray,
+  IsOptional,
+  IsUrl,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -24,7 +26,17 @@ export class ShopInformationDto {
 
   @IsString()
   @IsNotEmpty()
-  address: string;
+  fullAddress: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsNotEmpty()
+  lat: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsNotEmpty()
+  lng: number;
 
   @IsNumber()
   @IsNotEmpty()
@@ -44,11 +56,7 @@ export class ShopInformationDto {
 
   @IsString()
   @IsNotEmpty()
-  shopTitle: string;
-
-  @IsString()
-  @IsNotEmpty()
-  descirption: string;
+  description: string;
 
   @IsString()
   @IsNotEmpty()
@@ -58,4 +66,34 @@ export class ShopInformationDto {
   @ValidateNested({ each: true })
   @Type(() => TableTypeDto)
   tableTypes: TableTypeDto[];
+}
+
+export class addressDto {
+  @IsString()
+  @IsNotEmpty()
+  shop_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  fullAddress: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsNotEmpty()
+  lat: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsNotEmpty()
+  lng: number;
+}
+
+export class shopNameDto {
+  @IsString()
+  @IsNotEmpty()
+  shop_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  shopTitle: string;
 }

@@ -2,15 +2,24 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Res,
   UseGuards,
   UsePipes,
   ValidationPipe,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { ShopsService } from './shops.service';
-import { ShopInformationDto } from './dtos/ShopInformation.dto';
+import {
+  ShopInformationDto,
+  type addressDto,
+  type shopNameDto,
+} from './dtos/ShopInformation.dto';
 import { LoginDto } from './dtos/Login.dto';
 import { OtpService } from '../customer/otp.service';
 import {
@@ -34,13 +43,15 @@ export class ShopsController {
   ) {}
 
   @Post('register')
+  @UseInterceptors(FileInterceptor('shop_img'))
   @UsePipes(new ValidationPipe())
   async registerShopPartner(
     @Body() shopData: ShopInformationDto,
+    @UploadedFile() file: Express.Multer.File,
     @Res({ passthrough: true }) res: Response,
   ) {
     console.log('Received shop registration data:', shopData);
-    const result = await this.shopsService.registerShopPartner(shopData);
+    const result = await this.shopsService.registerShopPartner(shopData, file);
 
     // Set token in HTTP-only cookie
     res.cookie('auth_token', result.token, {
@@ -136,7 +147,10 @@ export class ShopsController {
       changePasswordData.phoneNumber,
       changePasswordData.otp,
     );
-    return { data: result };
+    return {
+      data: result,
+      message: 'Shop Password changed successfully.',
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -148,7 +162,10 @@ export class ShopsController {
       changeEmailData.oldOtp,
       changeEmailData.newOtp,
     );
-    return { data: result };
+    return {
+      data: result,
+      message: 'Shop Email changed successfully.',
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -160,6 +177,44 @@ export class ShopsController {
       changePhoneData.oldOtp,
       changePhoneData.newOtp,
     );
-    return { data: result };
+    return {
+      data: result,
+      message: 'Shop Phone Number changed successfully.',
+    };
+  }
+
+  @Patch('change-address')
+  async changeAddress(@Body() addressData: addressDto) {
+    const address = await this.shopsService.changeAddress(addressData);
+    return {
+      data: address,
+      message: 'Shop Address changed successfully.',
+    };
+  }
+
+  @Patch('change-shopName')
+  async changeShopName(@Body() data: shopNameDto) {
+    const shopData = await this.shopsService.changeShopName(data);
+    return {
+      data: shopData,
+      message: 'Shop Name changed successfully.',
+    };
+  }
+
+  @Patch('change-profileImage')
+  @UseInterceptors(FileInterceptor('image'))
+  async changeProfileImage(
+    @Body('shop_id') shop_id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    console.log(shop_id);
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+    const shopData = await this.shopsService.changeProfileImage(shop_id, file);
+    return {
+      data: shopData,
+      message: 'Shop Image changed successfully.',
+    };
   }
 }
