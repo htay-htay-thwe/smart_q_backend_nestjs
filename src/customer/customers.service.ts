@@ -12,6 +12,7 @@ import { Model } from 'mongoose';
 import { CustomerInformationDto } from './dtos/CustomerInformation.dto';
 import { AuthService } from '../auth/auth.service';
 import { OtpService } from './otp.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
 import { CustomerLoginDto } from './dtos/CustomerLogin.dto';
 
@@ -21,9 +22,13 @@ export class CustomersService {
     @InjectModel(Customers.name) private customersModel: Model<Customers>,
     private authService: AuthService,
     private otpService: OtpService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
-  async registerCustomer(userData: CustomerInformationDto) {
+  async registerCustomer(
+    userData: CustomerInformationDto,
+    file?: Express.Multer.File,
+  ) {
     // Check if email is verified
     const isEmailVerified = await this.otpService.isEmailVerified(
       userData.email,
@@ -69,12 +74,18 @@ export class CustomersService {
       );
     }
 
+    // Upload image to Cloudinary if file is provided
+    let profileImageUrl = userData.profileImg || '';
+    if (file) {
+      profileImageUrl = await this.cloudinaryService.uploadImage(file);
+    }
+
     const newCustomer = new this.customersModel({
       name: userData.name,
       email: userData.email,
       phoneNumber: userData.phoneNumber,
       password: await bcrypt.hash(userData.password, 10),
-      profileImg: userData.profileImg || '',
+      profileImg: profileImageUrl,
       isVerified: true,
     });
 
@@ -292,6 +303,35 @@ export class CustomersService {
     return {
       data: customerData,
       message: 'Email changed successfully.',
+    };
+  }
+
+  async changeProfileImage(customer_id: string, file: Express.Multer.File) {
+    const customer = await this.customersModel.findById(customer_id);
+    if (!customer) {
+      throw new NotFoundException('Customer not found.');
+    }
+    const imageUrl = await this.cloudinaryService.uploadImage(file);
+    customer.profileImg = imageUrl;
+    await customer.save();
+    const customerData = await this.customersModel.findById(customer_id);
+    return {
+      data: customerData,
+      message: 'Customer Image changed successfully.',
+    };
+  }
+
+  async changeUsername(customer_id: string, newUsername: string) {
+    const customer = await this.customersModel.findById(customer_id);
+    if (!customer) {
+      throw new NotFoundException('Customer not found.');
+    }
+    customer.name = newUsername;
+    await customer.save();
+    const customerData = await this.customersModel.findById(customer_id);
+    return {
+      data: customerData,
+      message: 'Customer Username changed successfully.',
     };
   }
 }

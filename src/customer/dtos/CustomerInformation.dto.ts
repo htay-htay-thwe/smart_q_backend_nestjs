@@ -21,3 +21,13 @@ export class CustomerInformationDto {
   @IsOptional()
   profileImg: string;
 }
+
+export class ChangeUsernameDto {
+  @IsString()
+  @IsNotEmpty()
+  customer_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  newUsername: string;
+}

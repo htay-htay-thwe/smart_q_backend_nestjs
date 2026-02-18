@@ -1,7 +1,21 @@
-import { Body, Controller, Post, Res, UseGuards, Get } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Res,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Patch,
+  BadRequestException,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { CustomersService } from './customers.service';
-import { CustomerInformationDto } from './dtos/CustomerInformation.dto';
+import {
+  ChangeUsernameDto,
+  CustomerInformationDto,
+} from './dtos/CustomerInformation.dto';
 import { CustomerLoginDto } from './dtos/CustomerLogin.dto';
 import {
   ChangeEmailDto,
@@ -62,11 +76,13 @@ export class CustomersController {
   }
 
   @Post('register')
+  @UseInterceptors(FileInterceptor('profileImg'))
   async registerCustomer(
     @Body() userData: CustomerInformationDto,
+    @UploadedFile() file: Express.Multer.File,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.customersService.registerCustomer(userData);
+    const result = await this.customersService.registerCustomer(userData, file);
 
     // Set token in HTTP-only cookie
     res.cookie('auth_token', result.token, {
@@ -108,7 +124,7 @@ export class CustomersController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('change-password')
+  @Patch('change-password')
   async changePassword(@Body() changePasswordData: ChangePasswordDto) {
     const result = await this.customersService.changePassword(
       changePasswordData.phoneNumber,
@@ -120,7 +136,7 @@ export class CustomersController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('change-phone-number')
+  @Patch('change-phone-number')
   async changePhoneNumber(@Body() changePhoneNumberData: ChangePhoneNumberDto) {
     const result = await this.customersService.changePhoneNumber(
       changePhoneNumberData.oldPhoneNumber,
@@ -132,7 +148,7 @@ export class CustomersController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('change-email')
+  @Patch('change-email')
   async changeEmail(@Body() changeEmailData: ChangeEmailDto) {
     const result = await this.customersService.changeEmail(
       changeEmailData.oldEmail,
@@ -141,5 +157,36 @@ export class CustomersController {
       changeEmailData.newOtp,
     );
     return { data: result };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-username')
+  async changeUsername(@Body() changeUsernameData: ChangeUsernameDto) {
+    const result = await this.customersService.changeUsername(
+      changeUsernameData.customer_id,
+      changeUsernameData.newUsername,
+    );
+    return { data: result };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-profileImage')
+  @UseInterceptors(FileInterceptor('image'))
+  async changeProfileImage(
+    @Body('customer_id') customer_id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    console.log(customer_id);
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+    const customerData = await this.customersService.changeProfileImage(
+      customer_id,
+      file,
+    );
+    return {
+      data: customerData,
+      message: 'Customer Image changed successfully.',
+    };
   }
 }

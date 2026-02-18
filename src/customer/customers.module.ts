@@ -6,6 +6,7 @@ import { Customers, CustomersSchema } from '../schemas/Customers.schema';
 import { Otp, OtpSchema } from '../schemas/Otp.schema';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from '../auth/auth.module';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuthModule } from '../auth/auth.module';
       { name: Otp.name, schema: OtpSchema },
     ]),
     AuthModule,
+    CloudinaryModule,
   ],
   controllers: [CustomersController],
   providers: [CustomersService, OtpService],

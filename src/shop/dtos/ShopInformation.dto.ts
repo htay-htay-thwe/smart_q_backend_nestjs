@@ -5,9 +5,8 @@ import {
   ValidateNested,
   IsArray,
   IsOptional,
-  IsUrl,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class TableTypeDto {
   @IsString()
@@ -38,6 +37,7 @@ export class ShopInformationDto {
   @IsNotEmpty()
   lng: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   phoneNumber: number;
@@ -51,8 +51,8 @@ export class ShopInformationDto {
   password: string;
 
   @IsString()
-  @IsNotEmpty()
-  shop_img: string;
+  @IsOptional()
+  shop_img?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -64,6 +64,9 @@ export class ShopInformationDto {
 
   @IsArray()
   @ValidateNested({ each: true })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
   @Type(() => TableTypeDto)
   tableTypes: TableTypeDto[];
 }

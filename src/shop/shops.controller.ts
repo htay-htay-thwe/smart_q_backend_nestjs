@@ -44,7 +44,7 @@ export class ShopsController {
 
   @Post('register')
   @UseInterceptors(FileInterceptor('shop_img'))
-  @UsePipes(new ValidationPipe())
+  @UsePipes(new ValidationPipe({ transform: true }))
   async registerShopPartner(
     @Body() shopData: ShopInformationDto,
     @UploadedFile() file: Express.Multer.File,
@@ -138,7 +138,7 @@ export class ShopsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('change-password')
+  @Patch('change-password')
   async changePassword(@Body() changePasswordData: ChangeShopPasswordDto) {
     const result = await this.shopsService.changePassword(
       changePasswordData.email,
@@ -154,7 +154,7 @@ export class ShopsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('change-email')
+  @Patch('change-email')
   async changeEmail(@Body() changeEmailData: ChangeShopEmailDto) {
     const result = await this.shopsService.changeEmail(
       changeEmailData.oldEmail,
@@ -169,7 +169,7 @@ export class ShopsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('change-phone-number')
+  @Patch('change-phone-number')
   async changePhoneNumber(@Body() changePhoneData: ChangeShopPhoneDto) {
     const result = await this.shopsService.changePhoneNumber(
       changePhoneData.oldPhoneNumber,
