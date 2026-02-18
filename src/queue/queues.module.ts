@@ -11,9 +11,11 @@ import {
   QueueHistory,
   QueueHistorySchema,
 } from '../schemas/QueueHistory.schema';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
     MongooseModule.forFeature([
       {
         name: Queues.name,

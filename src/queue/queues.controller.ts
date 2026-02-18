@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { QueuesService } from './queues.service';
 import { queueData } from './dtos/queueData.dto';
 import { GenerateQrDto } from './dtos/generateQr.dto';
 import { AssignTableDto } from './dtos/assignTable.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('api/queues')
 export class QueuesController {
   constructor(private queuesService: QueuesService) {}

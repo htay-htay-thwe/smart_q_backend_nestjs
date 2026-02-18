@@ -177,6 +177,8 @@ Now you can register a shop after both email and phone are verified!
 ## Step 6: Get All Shops with Populated Data
 **Endpoint:** `GET http://localhost:3000/api/shops`
 
+> **Requires Authentication** — Add `Authorization: Bearer <token>` header.
+
 This returns all shops with populated shop types and table types.
 
 ---
@@ -203,12 +205,49 @@ Upon successful registration, both shop and customer endpoints return a JWT toke
 - **SameSite:** Strict
 
 ### Using the Token:
-For protected routes (coming soon), the token will be automatically sent via cookie. Alternatively, you can use the Bearer token:
+After login or registration, copy the `token` from the response. Add it to every **protected** request as a Bearer token header:
 
 **Header:**
 ```
 Authorization: Bearer <your-token-here>
 ```
+
+In Postman: open the request → **Authorization** tab → Type: **Bearer Token** → paste your token.
+
+Alternatively, if you enable "Send cookies" in Postman, the `auth_token` cookie is sent automatically.
+
+---
+
+## Protected vs Public Routes
+
+### Customer Endpoints (`/api/customers`)
+
+| Method | Endpoint               | Auth Required | Description              |
+|--------|------------------------|:-------------:|--------------------------|
+| POST   | `/send-phone-otp`      | ❌ No         | Send OTP to phone        |
+| POST   | `/verify-phone-otp`    | ❌ No         | Verify phone OTP         |
+| POST   | `/send-email-otp`      | ❌ No         | Send OTP to email        |
+| POST   | `/verify-email-otp`    | ❌ No         | Verify email OTP         |
+| POST   | `/register`            | ❌ No         | Register new customer    |
+| POST   | `/login`               | ❌ No         | Login (returns token)    |
+| POST   | `/change-password`     | ✅ **Yes**    | Change password          |
+| POST   | `/change-phone-number` | ✅ **Yes**    | Change phone number      |
+| POST   | `/change-email`        | ✅ **Yes**    | Change email             |
+
+### Shop Endpoints (`/api/shops`)
+
+| Method | Endpoint               | Auth Required | Description              |
+|--------|------------------------|:-------------:|--------------------------|
+| POST   | `/send-email-otp`      | ❌ No         | Send OTP to email        |
+| POST   | `/verify-email-otp`    | ❌ No         | Verify email OTP         |
+| POST   | `/send-phone-otp`      | ❌ No         | Send OTP to phone        |
+| POST   | `/verify-phone-otp`    | ❌ No         | Verify phone OTP         |
+| POST   | `/register`            | ❌ No         | Register new shop        |
+| POST   | `/login`               | ❌ No         | Login (returns token)    |
+| GET    | `/`                    | ✅ **Yes**    | Get all shops            |
+| POST   | `/change-password`     | ✅ **Yes**    | Change password          |
+| POST   | `/change-email`        | ✅ **Yes**    | Change email             |
+| POST   | `/change-phone-number` | ✅ **Yes**    | Change phone number      |
 
 ---
 
@@ -584,6 +623,8 @@ When an error occurs, the API returns:
 ### Change Customer Password
 **Endpoint:** `POST http://localhost:3000/api/customers/change-password`
 
+> **Requires Authentication** — Add `Authorization: Bearer <token>` header.
+
 Change password requires OTP verification for security.
 
 **Steps:**
@@ -620,6 +661,8 @@ Change password requires OTP verification for security.
 
 ### Change Customer Phone Number
 **Endpoint:** `POST http://localhost:3000/api/customers/change-phone-number`
+
+> **Requires Authentication** — Add `Authorization: Bearer <token>` header.
 
 Change phone number requires OTP verification on BOTH old and new phone numbers (no password needed).
 
@@ -675,6 +718,8 @@ Change phone number requires OTP verification on BOTH old and new phone numbers 
 ### Change Shop Password
 **Endpoint:** `POST http://localhost:3000/api/shops/change-password`
 
+> **Requires Authentication** — Add `Authorization: Bearer <token>` header.
+
 Change password requires old password verification + phone OTP.
 
 **Steps:**
@@ -713,6 +758,8 @@ Change password requires old password verification + phone OTP.
 
 ### Change Shop Email
 **Endpoint:** `POST http://localhost:3000/api/shops/change-email`
+
+> **Requires Authentication** — Add `Authorization: Bearer <token>` header.
 
 Change email requires OTP verification on BOTH old and new email addresses (no password needed).
 
@@ -765,6 +812,8 @@ Change email requires OTP verification on BOTH old and new email addresses (no p
 
 ### Change Shop Phone Number
 **Endpoint:** `POST http://localhost:3000/api/shops/change-phone-number`
+
+> **Requires Authentication** — Add `Authorization: Bearer <token>` header.
 
 Change phone number requires OTP verification on BOTH old and new phone numbers (no password needed).
 

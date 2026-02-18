@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, Post, Res, UseGuards, Get } from '@nestjs/common';
 import type { Response } from 'express';
 import { CustomersService } from './customers.service';
 import { CustomerInformationDto } from './dtos/CustomerInformation.dto';
@@ -9,6 +9,7 @@ import {
   ChangePhoneNumberDto,
 } from './dtos/ChangePassword.dto';
 import { OtpService } from './otp.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   SendOtpDto,
   SendOtpEmailDto,
@@ -106,6 +107,7 @@ export class CustomersController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(@Body() changePasswordData: ChangePasswordDto) {
     const result = await this.customersService.changePassword(
@@ -117,6 +119,7 @@ export class CustomersController {
     return { data: result };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('change-phone-number')
   async changePhoneNumber(@Body() changePhoneNumberData: ChangePhoneNumberDto) {
     const result = await this.customersService.changePhoneNumber(
@@ -128,6 +131,7 @@ export class CustomersController {
     return { data: result };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('change-email')
   async changeEmail(@Body() changeEmailData: ChangeEmailDto) {
     const result = await this.customersService.changeEmail(

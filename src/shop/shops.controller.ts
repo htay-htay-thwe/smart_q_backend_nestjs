@@ -4,6 +4,7 @@ import {
   Get,
   Post,
   Res,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import {
   ChangeShopEmailDto,
   ChangeShopPhoneDto,
 } from './dtos/ChangeShop.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('api/shops')
 export class ShopsController {
@@ -81,6 +83,7 @@ export class ShopsController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   async findAll() {
     return { data: await this.shopsService.findAll() };
@@ -123,6 +126,7 @@ export class ShopsController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(@Body() changePasswordData: ChangeShopPasswordDto) {
     const result = await this.shopsService.changePassword(
@@ -135,6 +139,7 @@ export class ShopsController {
     return { data: result };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('change-email')
   async changeEmail(@Body() changeEmailData: ChangeShopEmailDto) {
     const result = await this.shopsService.changeEmail(
@@ -146,6 +151,7 @@ export class ShopsController {
     return { data: result };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('change-phone-number')
   async changePhoneNumber(@Body() changePhoneData: ChangeShopPhoneDto) {
     const result = await this.shopsService.changePhoneNumber(
