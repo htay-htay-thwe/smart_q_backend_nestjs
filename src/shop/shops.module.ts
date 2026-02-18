@@ -8,6 +8,7 @@ import { TableTypes, TableTypesSchema } from '../schemas/TableTypes.schema';
 import { Otp, OtpSchema } from '../schemas/Otp.schema';
 import { AuthModule } from '../auth/auth.module';
 import { OtpService } from '../customer/otp.service';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { OtpService } from '../customer/otp.service';
       },
     ]),
     AuthModule,
+    CloudinaryModule,
   ],
   controllers: [ShopsController],
   providers: [ShopsService, OtpService],

@@ -9,10 +9,15 @@ import { Model } from 'mongoose';
 import { Shops } from '../schemas/Shops.schema';
 import { TableTypes } from '../schemas/TableTypes.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { ShopInformationDto } from './dtos/ShopInformation.dto';
+import {
+  ShopInformationDto,
+  type addressDto,
+  type shopNameDto,
+} from './dtos/ShopInformation.dto';
 import { LoginDto } from './dtos/Login.dto';
 import { AuthService } from '../auth/auth.service';
 import { OtpService } from '../customer/otp.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -22,9 +27,13 @@ export class ShopsService {
     @InjectModel(TableTypes.name) private tableTypesModel: Model<TableTypes>,
     private authService: AuthService,
     private otpService: OtpService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
-  async registerShopPartner(shopData: ShopInformationDto) {
+  async registerShopPartner(
+    shopData: ShopInformationDto,
+    file?: Express.Multer.File,
+  ) {
     // Check if email is verified
     const isEmailVerified = await this.otpService.isEmailVerified(
       shopData.email,
@@ -72,16 +81,27 @@ export class ShopsService {
     // Hash the password
     const hashedPassword = await bcrypt.hash(shopData.password, 10);
 
+    // Upload image to Cloudinary if file is provided
+    let shopImageUrl = shopData.shop_img || '';
+    if (file) {
+      shopImageUrl = await this.cloudinaryService.uploadImage(file);
+    }
+
     // First, create the shop without table types
     const newShop = new this.shopsModel({
       name: shopData.name,
-      address: shopData.address,
+      address: {
+        fullAddress: shopData.fullAddress,
+        location: {
+          type: 'Point',
+          coordinates: [shopData.lng, shopData.lat],
+        },
+      },
       phoneNumber: shopData.phoneNumber,
       email: shopData.email,
       password: hashedPassword,
-      shopImg: shopData.shop_img,
-      shopTitle: shopData.shopTitle,
-      description: shopData.descirption,
+      shopImg: shopImageUrl,
+      description: shopData.description,
       shopTypes: shopData.shopTypeId,
     });
 
@@ -132,7 +152,6 @@ export class ShopsService {
     // Find shop with password field (it's normally excluded due to select: false)
     const existingShop = await this.shopsModel
       .findOne({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         email: loginData.email,
       })
       .select('+password');
@@ -143,7 +162,6 @@ export class ShopsService {
 
     // Compare password using bcrypt
     const isPasswordValid = await bcrypt.compare(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
       loginData.password,
       existingShop.password,
     );
@@ -262,10 +280,7 @@ export class ShopsService {
     shop.phoneNumber = newPhoneNumber;
     await shop.save();
     const shopData = await this.shopsModel.findById(shop._id);
-    return {
-      data: shopData,
-      message: 'Phone number changed successfully.',
-    };
+    return shopData;
   }
 
   async changeEmail(
@@ -309,9 +324,72 @@ export class ShopsService {
     shop.email = newEmail;
     await shop.save();
     const shopData = await this.shopsModel.findById(shop._id);
-    return {
-      data: shopData,
-      message: 'Email changed successfully.',
-    };
+    return shopData;
+  }
+
+  async changeAddress(addressData: addressDto) {
+    await this.shopsModel.findByIdAndUpdate(
+      addressData.shop_id,
+      {
+        address: {
+          fullAddress: addressData.fullAddress,
+          location: {
+            type: 'Point',
+            coordinates: [addressData.lng, addressData.lat], // ⚠ important
+          },
+        },
+      },
+      { new: true },
+    );
+    const shopData = await this.shopsModel.findById(addressData.shop_id);
+    return shopData;
+  }
+
+  async changeShopName(shopData: shopNameDto) {
+    await this.shopsModel.findByIdAndUpdate(
+      shopData.shop_id,
+      {
+        name: shopData.shopTitle,
+      },
+      { new: true },
+    );
+    const shop = await this.shopsModel.findById(shopData.shop_id);
+    return shop;
+  }
+
+  async changeProfileImage(shop_id: string, file: Express.Multer.File) {
+    // Validate shop exists
+    const shop = await this.shopsModel.findById(shop_id);
+    if (!shop) {
+      throw new NotFoundException('Shop not found.');
+    }
+
+    // Validate file
+    if (!file) {
+      throw new BadRequestException('Image file is required.');
+    }
+
+    try {
+      // Upload new image to Cloudinary
+      const imageUrl = await this.cloudinaryService.uploadImage(file);
+
+      // Update shop with new image URL
+      await this.shopsModel.findByIdAndUpdate(
+        shop_id,
+        {
+          shopImg: imageUrl,
+        },
+        { new: true },
+      );
+
+      // Return updated shop
+      const updatedShop = await this.shopsModel.findById(shop_id);
+      return updatedShop;
+    } catch (error) {
+      console.error('Error uploading image to Cloudinary:', error);
+      throw new BadRequestException(
+        'Failed to upload image. Please check Cloudinary configuration.',
+      );
+    }
   }
 }
