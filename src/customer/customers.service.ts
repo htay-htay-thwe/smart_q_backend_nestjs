@@ -29,7 +29,19 @@ export class CustomersService {
     userData: CustomerInformationDto,
     file?: Express.Multer.File,
   ) {
-    // Check if email is verified
+    if (!userData.email && !userData.phoneNumber) {
+      throw new BadRequestException(
+        'Either email or phone number must be provided.',
+      );
+    }
+
+    if(!userData.email){
+      throw new BadRequestException(
+        'Email is required for registration.',
+      );
+    }
+    
+    if (userData.email) {
     const isEmailVerified = await this.otpService.isEmailVerified(
       userData.email,
     );
@@ -40,30 +52,28 @@ export class CustomersService {
       );
     }
 
-    // Check if phone is verified
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const isVerified = await this.otpService.isPhoneVerified(
+    const existingEmail = await this.customersModel.findOne({
+      email: userData.email,
+    });
+
+    if (existingEmail) {
+      throw new ConflictException(
+        'Email already exists. Please use a different email.',
+      );
+    }
+  }
+
+     if (userData.phoneNumber) {
+    const isPhoneVerified = await this.otpService.isPhoneVerified(
       userData.phoneNumber,
     );
 
-    if (!isVerified) {
+    if (!isPhoneVerified) {
       throw new BadRequestException(
         'Phone number not verified. Please verify with OTP first.',
       );
     }
 
-    // Check if email already exists
-    const existingShop = await this.customersModel.findOne({
-      email: userData.email,
-    });
-
-    if (existingShop) {
-      throw new ConflictException(
-        'Email already exists. Please use a different email.',
-      );
-    }
-
-    // Check if phone number already exists
     const existingPhone = await this.customersModel.findOne({
       phoneNumber: userData.phoneNumber,
     });
@@ -73,6 +83,7 @@ export class CustomersService {
         'Phone number already registered. Please login instead.',
       );
     }
+  }
 
     // Upload image to Cloudinary if file is provided
     let profileImageUrl = userData.profileImg || '';
@@ -82,10 +93,10 @@ export class CustomersService {
 
     const newCustomer = new this.customersModel({
       name: userData.name,
-      email: userData.email,
-      phoneNumber: userData.phoneNumber,
+      email: userData.email || null,
+      phoneNumber: userData.phoneNumber || null,
       password: await bcrypt.hash(userData.password, 10),
-      profileImg: profileImageUrl,
+      profileImg: profileImageUrl || null,
       isVerified: true,
     });
 
