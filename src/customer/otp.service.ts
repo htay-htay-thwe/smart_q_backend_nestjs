@@ -17,7 +17,7 @@ export class OtpService {
   ): Promise<{ success: boolean; message: string }> {
     // Generate OTP
     const otp = this.generateOtp();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); 
 
     // Delete any existing OTPs for this phone number
     await this.otpModel.deleteMany({
@@ -34,7 +34,6 @@ export class OtpService {
       isVerified: false,
       type: 'phone',
     });
-
     // TODO: Integrate with SMS service (Twilio, AWS SNS, etc.)
     // For now, we'll just log it (remove this in production)
     console.log(`OTP for phone ${phoneNumber}: ${otp}`);
