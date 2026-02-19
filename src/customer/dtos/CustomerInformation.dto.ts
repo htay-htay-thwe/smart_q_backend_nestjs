@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer/types/decorators/type.decorator';
 import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CustomerInformationDto {
@@ -11,6 +12,7 @@ export class CustomerInformationDto {
   email?: string; 
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber({}, { message: 'Phone number must be a number' }) 
   phoneNumber?: number; 
 

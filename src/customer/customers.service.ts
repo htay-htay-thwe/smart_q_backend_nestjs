@@ -34,13 +34,8 @@ export class CustomersService {
         'Either email or phone number must be provided.',
       );
     }
-
-    if(!userData.email){
-      throw new BadRequestException(
-        'Email is required for registration.',
-      );
-    }
     
+    // by email
     if (userData.email) {
     const isEmailVerified = await this.otpService.isEmailVerified(
       userData.email,
@@ -63,6 +58,7 @@ export class CustomersService {
     }
   }
 
+  // by phone number
      if (userData.phoneNumber) {
     const isPhoneVerified = await this.otpService.isPhoneVerified(
       userData.phoneNumber,
