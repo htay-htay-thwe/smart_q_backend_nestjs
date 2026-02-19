@@ -41,7 +41,7 @@ export class OtpService {
 
     return {
       success: true,
-      message: `OTP sent to ${phoneNumber}`,
+      message: `OTP sent to ${phoneNumber} : ${otp}`,
     };
   }
 
@@ -74,7 +74,7 @@ export class OtpService {
 
     return {
       success: true,
-      message: `OTP sent to ${email}`,
+      message: `OTP sent to ${email} : ${otp}`,
     };
   }
 
