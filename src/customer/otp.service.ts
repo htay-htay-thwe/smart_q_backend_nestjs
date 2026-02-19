@@ -13,7 +13,7 @@ export class OtpService {
   }
 
   async sendOtpToPhone(
-    phoneNumber: number,
+    phoneNumber: string,
   ): Promise<{ success: boolean; message: string }> {
     // Generate OTP
     const otp = this.generateOtp();
@@ -77,7 +77,7 @@ export class OtpService {
     };
   }
 
-  async verifyPhoneOtp(phoneNumber: number, otp: string): Promise<boolean> {
+  async verifyPhoneOtp(phoneNumber: string, otp: string): Promise<boolean> {
     const otpRecord = await this.otpModel.findOne({
       phoneNumber,
       otp,
@@ -129,7 +129,7 @@ export class OtpService {
     return true;
   }
 
-  async isPhoneVerified(phoneNumber: number): Promise<boolean> {
+  async isPhoneVerified(phoneNumber: string): Promise<boolean> {
     const verified = await this.otpModel.findOne({
       phoneNumber,
       type: 'phone',

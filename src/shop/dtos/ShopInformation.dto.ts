@@ -37,10 +37,9 @@ export class ShopInformationDto {
   @IsNotEmpty()
   lng: number;
 
-  @Type(() => Number)
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  phoneNumber: number;
+  phoneNumber: string;
 
   @IsString()
   @IsNotEmpty()

@@ -205,7 +205,7 @@ export class ShopsService {
     email: string,
     oldPassword: string,
     newPassword: string,
-    phoneNumber: number,
+    phoneNumber: string,
     otp: string,
   ) {
     const shop = await this.shopsModel.findOne({ email }).select('+password');
@@ -239,8 +239,8 @@ export class ShopsService {
   }
 
   async changePhoneNumber(
-    oldPhoneNumber: number,
-    newPhoneNumber: number,
+    oldPhoneNumber: string,
+    newPhoneNumber: string,
     oldOtp: string,
     newOtp: string,
   ) {

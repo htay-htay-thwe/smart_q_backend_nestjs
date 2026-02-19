@@ -13,7 +13,7 @@ export class LoginDto {
 export class LoginCustomerDto {
   @IsString()
   @IsNotEmpty()
-  phoneNumber: number;
+  phoneNumber: string;
 
   @IsString()
   @IsNotEmpty()

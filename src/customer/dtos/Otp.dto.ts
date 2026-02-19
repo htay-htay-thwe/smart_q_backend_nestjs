@@ -1,15 +1,15 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class SendOtpDto {
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  phoneNumber: number;
+  phoneNumber: string;
 }
 
 export class VerifyOtpDto {
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  phoneNumber: number;
+  phoneNumber: string;
 
   @IsString()
   @IsNotEmpty()

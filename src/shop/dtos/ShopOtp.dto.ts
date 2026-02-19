@@ -17,15 +17,15 @@ export class VerifyEmailOtpDto {
 }
 
 export class SendPhoneOtpDto {
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  phoneNumber: number;
+  phoneNumber: string;
 }
 
 export class VerifyPhoneOtpDto {
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  phoneNumber: number;
+  phoneNumber: string;
 
   @IsString()
   @IsNotEmpty()

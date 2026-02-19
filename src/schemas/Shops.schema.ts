@@ -9,7 +9,7 @@ export class Shops {
   name: string;
 
   @Prop({ required: true, unique: true })
-  phoneNumber: number;
+  phoneNumber: string;
 
   @Prop({ required: true, unique: true })
   email: string;

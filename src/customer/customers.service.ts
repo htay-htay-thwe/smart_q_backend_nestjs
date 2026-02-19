@@ -34,52 +34,52 @@ export class CustomersService {
         'Either email or phone number must be provided.',
       );
     }
-    
+
     // by email
     if (userData.email) {
-    const isEmailVerified = await this.otpService.isEmailVerified(
-      userData.email,
-    );
-
-    if (!isEmailVerified) {
-      throw new BadRequestException(
-        'Email not verified. Please verify with OTP first.',
+      const isEmailVerified = await this.otpService.isEmailVerified(
+        userData.email,
       );
+
+      if (!isEmailVerified) {
+        throw new BadRequestException(
+          'Email not verified. Please verify with OTP first.',
+        );
+      }
+
+      const existingEmail = await this.customersModel.findOne({
+        email: userData.email,
+      });
+
+      if (existingEmail) {
+        throw new ConflictException(
+          'Email already exists. Please use a different email.',
+        );
+      }
     }
 
-    const existingEmail = await this.customersModel.findOne({
-      email: userData.email,
-    });
-
-    if (existingEmail) {
-      throw new ConflictException(
-        'Email already exists. Please use a different email.',
+    // by phone number
+    if (userData.phoneNumber) {
+      const isPhoneVerified = await this.otpService.isPhoneVerified(
+        userData.phoneNumber,
       );
+
+      if (!isPhoneVerified) {
+        throw new BadRequestException(
+          'Phone number not verified. Please verify with OTP first.',
+        );
+      }
+
+      const existingPhone = await this.customersModel.findOne({
+        phoneNumber: userData.phoneNumber,
+      });
+
+      if (existingPhone) {
+        throw new ConflictException(
+          'Phone number already registered. Please login instead.',
+        );
+      }
     }
-  }
-
-  // by phone number
-     if (userData.phoneNumber) {
-    const isPhoneVerified = await this.otpService.isPhoneVerified(
-      userData.phoneNumber,
-    );
-
-    if (!isPhoneVerified) {
-      throw new BadRequestException(
-        'Phone number not verified. Please verify with OTP first.',
-      );
-    }
-
-    const existingPhone = await this.customersModel.findOne({
-      phoneNumber: userData.phoneNumber,
-    });
-
-    if (existingPhone) {
-      throw new ConflictException(
-        'Phone number already registered. Please login instead.',
-      );
-    }
-  }
 
     // Upload image to Cloudinary if file is provided
     let profileImageUrl = userData.profileImg || '';
@@ -172,12 +172,11 @@ export class CustomersService {
   }
 
   async changePassword(
-    phoneNumber: number,
+    phoneNumber: string,
     oldPassword: string,
     newPassword: string,
     otp: string,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const isOtpValid = await this.otpService.verifyPhoneOtp(phoneNumber, otp);
 
     if (!isOtpValid) {
@@ -214,13 +213,13 @@ export class CustomersService {
   }
 
   async changePhoneNumber(
-    oldPhoneNumber: number,
-    newPhoneNumber: number,
+    oldPhoneNumber: string,
+    newPhoneNumber: string,
     oldOtp: string,
     newOtp: string,
   ) {
     // Verify OTP for old phone number
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+
     const isOldOtpValid = await this.otpService.verifyPhoneOtp(
       oldPhoneNumber,
       oldOtp,
@@ -230,7 +229,7 @@ export class CustomersService {
     }
 
     // Verify OTP for new phone number
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+
     const isNewOtpValid = await this.otpService.verifyPhoneOtp(
       newPhoneNumber,
       newOtp,
@@ -270,7 +269,7 @@ export class CustomersService {
     newOtp: string,
   ) {
     // Verify OTP for old email
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+
     const isOldOtpValid = await this.otpService.verifyEmailOtp(
       oldEmail,
       oldOtp,
@@ -280,7 +279,7 @@ export class CustomersService {
     }
 
     // Verify OTP for new email
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+
     const isNewOtpValid = await this.otpService.verifyEmailOtp(
       newEmail,
       newOtp,

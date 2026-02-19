@@ -3,7 +3,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 @Schema({ timestamps: true })
 export class Otp {
   @Prop({ required: false })
-  phoneNumber: number;
+  phoneNumber: string;
 
   @Prop({ required: false })
   email: string;
