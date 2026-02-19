@@ -5,10 +5,10 @@ export class Customers {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: false, unique: true })
   email: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: false, unique: true })
   phoneNumber: number;
 
   @Prop({ required: true, select: false })
