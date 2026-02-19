@@ -1,21 +1,25 @@
-
 import { Type } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CustomerInformationDto {
   @IsString()
   @IsNotEmpty()
   name: string;
-  
-  @IsOptional()
-  @IsEmail({}, { message: 'Invalid email format' })
-  @IsString() 
-  email?: string; 
 
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber({}, { message: 'Phone number must be a number' }) 
-  phoneNumber?: number; 
+  @IsEmail({}, { message: 'Invalid email format' })
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
 
   @IsString()
   @IsNotEmpty()

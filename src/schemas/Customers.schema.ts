@@ -5,11 +5,21 @@ export class Customers {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: false, sparse: true })
+  @Prop({
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true,
+  })
   email: string;
 
-  @Prop({ required: false, sparse: true })
-  phoneNumber: number;
+  @Prop({
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true,
+  })
+  phoneNumber: string;
 
   @Prop({ required: true, select: false })
   password: string;
