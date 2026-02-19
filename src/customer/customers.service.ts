@@ -106,7 +106,7 @@ export class CustomersService {
     };
   }
 
-  async findByPhone(phoneNumber: number) {
+  async findByPhone(phoneNumber: string) {
     const customer = await this.customersModel.findOne({ phoneNumber });
 
     if (!customer) {

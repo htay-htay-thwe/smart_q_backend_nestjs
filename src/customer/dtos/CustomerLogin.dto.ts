@@ -9,8 +9,8 @@ import {
 export class CustomerLoginDto {
   @ValidateIf((o) => !o.email)
   @IsNotEmpty({ message: 'Phone number is required if email is not provided' })
-  @IsNumber()
-  phoneNumber?: number;
+  @IsString()
+  phoneNumber?: string;
 
   @ValidateIf((o) => !o.phoneNumber)
   @IsNotEmpty({ message: 'Email is required if phone number is not provided' })
