@@ -4,14 +4,15 @@ export class CustomerInformationDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+  
+  @IsOptional()
+  @IsEmail({}, { message: 'Invalid email format' })
+  @IsString() 
+  email?: string; 
 
-  @IsNotEmpty()
-  @IsString()
-  email: string;
-
-  @IsNumber()
-  @IsNotEmpty()
-  phoneNumber: number;
+  @IsOptional()
+  @IsNumber({}, { message: 'Phone number must be a number' }) 
+  phoneNumber?: number; 
 
   @IsString()
   @IsNotEmpty()
