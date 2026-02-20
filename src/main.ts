@@ -8,10 +8,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: [
-     '*',
-      // 'https://your-frontend-domain.com',
-    ],
+    origin: true,
     credentials: true,
   });
 
