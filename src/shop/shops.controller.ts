@@ -35,6 +35,7 @@ import {
 } from './dtos/ChangeShop.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('api/shops')
 export class ShopsController {
   constructor(
@@ -51,7 +52,7 @@ export class ShopsController {
     @Res({ passthrough: true }) res: Response,
   ) {
     console.log('Received shop registration data:', shopData);
-    console.log('file',file)
+    console.log('file', file);
     const result = await this.shopsService.registerShopPartner(shopData, file);
 
     // Set token in HTTP-only cookie
