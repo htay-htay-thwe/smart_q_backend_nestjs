@@ -6,10 +6,10 @@ export class Customers {
   name: string;
 
   @Prop({ unique: true, sparse: true })
-  email: string;
+  email?: string;
 
   @Prop({ unique: true, sparse: true })
-  phoneNumber: string;
+  phoneNumber?: string;
 
   @Prop({ required: true, select: false })
   password: string;
