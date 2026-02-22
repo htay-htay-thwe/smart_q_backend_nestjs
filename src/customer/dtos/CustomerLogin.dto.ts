@@ -1,21 +1,15 @@
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-  ValidateIf,
-} from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, ValidateIf } from 'class-validator';
 
 export class CustomerLoginDto {
-  @ValidateIf((o) => !o.email)
-  @IsNotEmpty({ message: 'Phone number is required if email is not provided' })
-  @IsString()
-  phoneNumber?: string;
-
   @ValidateIf((o) => !o.phoneNumber)
+  @IsEmail({}, { message: 'Invalid email format' })
   @IsNotEmpty({ message: 'Email is required if phone number is not provided' })
-  @IsEmail()
   email?: string;
+
+  @ValidateIf((o) => !o.email)
+  @IsString()
+  @IsNotEmpty({ message: 'Phone number is required if email is not provided' })
+  phoneNumber?: string;
 
   @IsString()
   @IsNotEmpty()

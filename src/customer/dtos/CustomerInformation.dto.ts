@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  ValidateIf,
 } from 'class-validator';
 
 export class CustomerInformationDto {
@@ -12,13 +13,14 @@ export class CustomerInformationDto {
   @IsNotEmpty()
   name: string;
 
-  @IsOptional()
+  @ValidateIf((o) => !o.phoneNumber)
   @IsEmail({}, { message: 'Invalid email format' })
-  @IsString()
+  @IsNotEmpty({ message: 'Email is required if phone number is not provided' })
   email?: string;
 
-  @IsOptional()
+  @ValidateIf((o) => !o.email)
   @IsString()
+  @IsNotEmpty({ message: 'Phone number is required if email is not provided' })
   phoneNumber?: string;
 
   @IsString()
