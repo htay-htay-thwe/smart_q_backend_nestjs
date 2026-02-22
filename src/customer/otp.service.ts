@@ -17,7 +17,7 @@ export class OtpService {
   ): Promise<{ success: boolean; message: string }> {
     // Generate OTP
     const otp = this.generateOtp();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); 
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     // Delete any existing OTPs for this phone number
     await this.otpModel.deleteMany({
@@ -130,19 +130,23 @@ export class OtpService {
   }
 
   async isPhoneVerified(phoneNumber: string): Promise<boolean> {
+    const now = new Date();
     const verified = await this.otpModel.findOne({
       phoneNumber,
       type: 'phone',
       isVerified: true,
+      expiresAt: { $gt: now },
     });
     return !!verified;
   }
 
   async isEmailVerified(email: string): Promise<boolean> {
+    const now = new Date();
     const verified = await this.otpModel.findOne({
       email,
       type: 'email',
       isVerified: true,
+      expiresAt: { $gt: now },
     });
     return !!verified;
   }
