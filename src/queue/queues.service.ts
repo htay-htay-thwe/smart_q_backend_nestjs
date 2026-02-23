@@ -206,22 +206,38 @@ export class QueuesService {
     const session = await this.tableStatusModel.db.startSession();
     session.startTransaction();
     try {
-      // 1. Mark the table as free (isActive: false)
-      const tableStatus = await this.tableStatusModel.findOneAndUpdate(
-        {
-          shop_id: shop_id,
-          table_no: table_no,
-          table_type_id: table_type_id,
+      const tableStatus = await this.tableStatusModel
+        .findOneAndDelete({
+          shop_id,
+          table_no,
+          table_type_id,
           isActive: true,
-        },
-        { isActive: false },
-        { session, new: true },
-      );
+        })
+        .session(session);
+
       if (!tableStatus) {
         throw new NotFoundException('Active table not found');
       }
 
-      // 2. Find the next waiting customer in the queue
+      const queue = await this.queuesModel
+        .findById(tableStatus.queue_id)
+        .session(session);
+
+      if (queue) {
+        await this.queueHistoryModel.create(
+          [
+            {
+              ...queue.toObject(),
+              completedAt: new Date(),
+            },
+          ],
+          { session },
+        );
+
+        await this.queuesModel.deleteOne({ _id: queue._id }, { session });
+      }
+
+      // 3. Find the next waiting customer in the queue
       const nextQueue = await this.queuesModel.findOneAndUpdate(
         {
           shop_id: shop_id,
@@ -242,13 +258,13 @@ export class QueuesService {
       await session.commitTransaction();
       session.endSession();
       return {
-        freedTable: tableStatus,
         updatedQueue: nextQueue,
       };
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       throw error;
+    } finally {
+      session.endSession();
     }
   }
 
