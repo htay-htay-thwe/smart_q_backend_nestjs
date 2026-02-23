@@ -77,7 +77,7 @@ export class QueuesService {
       const position = waitingAhead + 1;
       // Use totalTables as tableCount
       estimatedWaitTime =
-        Math.floor(position / totalTables) * this.AVERAGE_SERVICE_TIME;
+        Math.ceil(position / totalTables) * this.AVERAGE_SERVICE_TIME;
       status = 'waiting';
 
       const lastQueue = await this.queuesModel
