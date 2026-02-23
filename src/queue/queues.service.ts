@@ -73,8 +73,13 @@ export class QueuesService {
         status: 'waiting',
       });
 
-      estimatedWaitTime = waitingAhead * this.AVERAGE_SERVICE_TIME;
+      // The new position in the queue (including this customer)
+      const position = waitingAhead + 1;
+      // Use totalTables as tableCount
+      estimatedWaitTime =
+        Math.floor((position - 1) / totalTables) * this.AVERAGE_SERVICE_TIME;
       status = 'waiting';
+
       const lastQueue = await this.queuesModel
         .findOne({
           shop_id: queueData.shop_id,
