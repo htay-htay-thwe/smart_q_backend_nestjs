@@ -56,7 +56,7 @@ export class QueuesService {
     const occupiedTblAtQueue = await this.queuesModel.countDocuments({
       shop_id: queueData.shop_id,
       table_type_id: queueData.table_type_id,
-      status: 'Ready to seat',
+      status: { $in: ['Ready to seat', 'qr-scanned', 'seated'] },
     });
     console.log('occupiedTblAtQueue', occupiedTblAtQueue);
     const hasAvailableTable =
@@ -190,7 +190,6 @@ export class QueuesService {
       completedAt: new Date(),
     });
 
-    await this.queuesModel.findByIdAndDelete(queue_id);
     return await this.getQueueById(queue_id);
   }
 
