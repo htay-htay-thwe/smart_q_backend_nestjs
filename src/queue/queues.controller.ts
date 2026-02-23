@@ -84,6 +84,12 @@ export class QueuesController {
     return { data: tableStatus };
   }
 
+  @Get('getQueue-history/:shopId')
+  async getQueueHistoryByShop(@Param('shopId') shopId: string) {
+    const history = await this.queuesService.getQueueHistoryByShop(shopId);
+    return { data: history };
+  }
+
   @Patch('free-table')
   async freeTableAndUpdateQueue(
     @Body() body: { shop_id: string; table_no: string; table_type_id: string },
