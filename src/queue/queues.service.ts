@@ -228,10 +228,11 @@ export class QueuesService {
         .session(session);
 
       if (queue) {
+        const { _id, ...queueData } = queue.toObject();
         await this.queueHistoryModel.create(
           [
             {
-              ...queue.toObject(),
+              ...queueData,
               completedAt: new Date(),
             },
           ],
