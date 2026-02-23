@@ -196,50 +196,9 @@ export class QueuesService {
 
   async getTableStatus(shopId: string) {
     console.log('Fetching table status for shop:', shopId);
-    const tables = await this.tableStatusModel
-      .find({ shop_id: shopId })
-      .populate({
-        path: 'queue_id',
-        populate: {
-          path: 'customer_id',
-          select: 'name phone email',
-        },
-      })
-      .lean();
+    const tables = await this.tableStatusModel.find({ shop_id: shopId }).lean();
 
-    console.log('Tables at shop:', tables);
-
-    // Group tables by table_type_id
-    const groupedByTableType = tables.reduce((acc, table) => {
-      const typeId = table.table_type_id.toString();
-
-      if (!acc[typeId]) {
-        acc[typeId] = {
-          table_type_id: typeId,
-          shop_id: table.shop_id,
-          available_tables: [],
-          occupied_tables: [],
-          total_tables: 0,
-          available_count: 0,
-          occupied_count: 0,
-        };
-      }
-
-      if (table.isActive && table.queue_id) {
-        acc[typeId].occupied_tables.push(table);
-        acc[typeId].occupied_count++;
-      } else {
-        acc[typeId].available_tables.push(table);
-        acc[typeId].available_count++;
-      }
-
-      acc[typeId].total_tables++;
-
-      return acc;
-    }, {});
-
-    console.log('Grouped table status:', groupedByTableType);
-    return Object.values(groupedByTableType);
+    return tables;
   }
 
   async checkNearbyQueues(shopId: string) {
