@@ -86,13 +86,13 @@ export class QueuesController {
 
   @Patch('free-table')
   async freeTableAndUpdateQueue(
-    @Body() body: { shopId: string; tableNo: string; tableTypeId: string },
+    @Body() body: { shop_id: string; table_no: string; table_type_id: string },
   ) {
-    const { shopId, tableNo, tableTypeId } = body;
+    const { shop_id, table_no, table_type_id } = body;
     const result = await this.queuesService.freeTableAndUpdateQueue(
-      shopId,
-      tableNo,
-      tableTypeId,
+      shop_id,
+      table_no,
+      table_type_id,
     );
     return {
       data: result,
