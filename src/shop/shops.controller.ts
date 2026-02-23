@@ -35,7 +35,6 @@ import {
 } from './dtos/ChangeShop.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@UseGuards(JwtAuthGuard)
 @Controller('api/shops')
 export class ShopsController {
   constructor(
@@ -97,7 +96,7 @@ export class ShopsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get()
+  @Get('all')
   async findAll() {
     return { data: await this.shopsService.findAll() };
   }
