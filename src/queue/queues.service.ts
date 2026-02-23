@@ -274,15 +274,14 @@ export class QueuesService {
 
     return tables;
   }
-  
+
   async getQueueHistoryByShop(shopId: string) {
-    const history = await this.queueHistoryModel
+    return this.queueHistoryModel
       .find({ shop_id: shopId })
       .populate('customer_id')
       .populate('shop_id')
       .sort({ completedAt: -1 })
       .exec();
-    return history;
   }
 
   async checkNearbyQueues(shopId: string) {
