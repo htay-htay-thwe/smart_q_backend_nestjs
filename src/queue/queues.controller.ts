@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { QueuesService } from './queues.service';
 import { queueData } from './dtos/queueData.dto';
 import { GenerateQrDto } from './dtos/generateQr.dto';
@@ -74,5 +82,21 @@ export class QueuesController {
   async getTableStatus(@Param('shopId') shopId: string) {
     const tableStatus = await this.queuesService.getTableStatus(shopId);
     return { data: tableStatus };
+  }
+
+  @Patch('free-table')
+  async freeTableAndUpdateQueue(
+    @Body() body: { shopId: string; tableNo: string; tableTypeId: string },
+  ) {
+    const { shopId, tableNo, tableTypeId } = body;
+    const result = await this.queuesService.freeTableAndUpdateQueue(
+      shopId,
+      tableNo,
+      tableTypeId,
+    );
+    return {
+      data: result,
+      message: 'Table freed and next customer updated',
+    };
   }
 }

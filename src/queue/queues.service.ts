@@ -193,6 +193,60 @@ export class QueuesService {
     return await this.getQueueById(queue_id);
   }
 
+  async freeTableAndUpdateQueue(
+    shop_id: string,
+    table_no: string,
+    table_type_id: string,
+  ) {
+    const session = await this.tableStatusModel.db.startSession();
+    session.startTransaction();
+    try {
+      // 1. Mark the table as free (isActive: false)
+      const tableStatus = await this.tableStatusModel.findOneAndUpdate(
+        {
+          shop_id: shop_id,
+          table_no: table_no,
+          table_type_id: table_type_id,
+          isActive: true,
+        },
+        { isActive: false },
+        { session, new: true },
+      );
+      if (!tableStatus) {
+        throw new NotFoundException('Active table not found');
+      }
+
+      // 2. Find the next waiting customer in the queue
+      const nextQueue = await this.queuesModel.findOneAndUpdate(
+        {
+          shop_id: shop_id,
+          table_type_id: table_type_id,
+          status: 'waiting',
+        },
+        {
+          status: 'Ready to seat',
+          estimated_wait_time: 0,
+        },
+        {
+          session,
+          sort: { queue_number: 1 },
+          new: true,
+        },
+      );
+
+      await session.commitTransaction();
+      session.endSession();
+      return {
+        freedTable: tableStatus,
+        updatedQueue: nextQueue,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+
   async getTableStatus(shopId: string) {
     console.log('Fetching table status for shop:', shopId);
     const tables = await this.tableStatusModel.find({ shop_id: shopId }).lean();

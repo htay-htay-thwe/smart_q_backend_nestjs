@@ -66,6 +66,19 @@ Or via cookie: if "Send cookies" is enabled in Postman, `auth_token` is sent aut
 | GET    | `/:id`                      | Get queue by ID |
 | PATCH  | `/generate-qr`              | Generate QR code |
 | PATCH  | `/assign-table`             | Assign table to customer |
+| PATCH  | `/free-table`               | Free a table and update next customer |
+### Free Table (Admin)
+**`PATCH http://localhost:3000/api/queues/free-table`**
+Body: raw JSON
+```json
+{
+  "shop_id": "65fabc123def456789012345",
+  "table_no": "A-05",
+  "table_type_id": "65f789def012345abc678901"
+}
+```
+**Description:** Frees the specified table and updates the next waiting customer to "Ready to seat" for that table type.
+
 
 ---
 
