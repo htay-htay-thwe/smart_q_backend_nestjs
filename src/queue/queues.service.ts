@@ -220,7 +220,11 @@ export class QueuesService {
       }
 
       const queue = await this.queuesModel
-        .findById(tableStatus.queue_id)
+        .findByIdAndUpdate(
+          tableStatus.queue_id,
+          { status: 'finished' },
+          { new: true },
+        )
         .session(session);
 
       if (queue) {
