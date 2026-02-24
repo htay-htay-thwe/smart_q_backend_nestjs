@@ -19,6 +19,7 @@ import { AuthService } from '../auth/auth.service';
 import { OtpService } from '../customer/otp.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
+import { Otp } from '../schemas/Otp.schema';
 
 @Injectable()
 export class ShopsService {
@@ -203,12 +204,10 @@ export class ShopsService {
 
   async changePassword(
     email: string,
-    oldPassword: string,
     newPassword: string,
     phoneNumber: string,
-    otp: string,
   ) {
-    const shop = await this.shopsModel.findOne({ email }).select('+password');
+    const shop = await this.shopsModel.findOne({ email });
 
     if (!shop) {
       throw new NotFoundException('Shop not found.');
@@ -221,16 +220,15 @@ export class ShopsService {
       );
     }
 
-    // Verify old password
-    const isPasswordValid = await bcrypt.compare(oldPassword, shop.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid old password.');
+    // Verify OTP for phone number
+    const isPhoneVerified = await this.otpService.isPhoneVerified(phoneNumber);
+    if (!isPhoneVerified) {
+      throw new UnauthorizedException('Invalid OTP for phone number verification.');
     }
 
-    // Verify OTP for phone number
-    const isOtpValid = await this.otpService.verifyPhoneOtp(phoneNumber, otp);
-    if (!isOtpValid) {
-      throw new UnauthorizedException('Invalid OTP.');
+    const isEmailVerified = await this.otpService.isEmailVerified(email);
+    if (!isEmailVerified) {
+      throw new UnauthorizedException('Invalid OTP for email verification.');
     }
 
     shop.password = await bcrypt.hash(newPassword, 10);
@@ -240,26 +238,18 @@ export class ShopsService {
 
   async changePhoneNumber(
     oldPhoneNumber: string,
-    newPhoneNumber: string,
-    oldOtp: string,
-    newOtp: string,
+    newPhoneNumber: string
   ) {
     // Verify OTP for old phone number
-    const isOldOtpValid = await this.otpService.verifyPhoneOtp(
-      oldPhoneNumber,
-      oldOtp,
-    );
+    const isOldOtpValid = await this.otpService.isPhoneVerified(oldPhoneNumber);
     if (!isOldOtpValid) {
-      throw new UnauthorizedException('Invalid OTP for old phone number.');
+      throw new UnauthorizedException('Old phone number not verified with OTP.');
     }
 
     // Verify OTP for new phone number
-    const isNewOtpValid = await this.otpService.verifyPhoneOtp(
-      newPhoneNumber,
-      newOtp,
-    );
+    const isNewOtpValid = await this.otpService.isPhoneVerified(newPhoneNumber);
     if (!isNewOtpValid) {
-      throw new UnauthorizedException('Invalid OTP for new phone number.');
+      throw new UnauthorizedException('New phone number not verified with OTP.');
     }
 
     const shop = await this.shopsModel.findOne({
@@ -286,25 +276,17 @@ export class ShopsService {
   async changeEmail(
     oldEmail: string,
     newEmail: string,
-    oldOtp: string,
-    newOtp: string,
   ) {
-    // Verify OTP for old email
-    const isOldOtpValid = await this.otpService.verifyEmailOtp(
-      oldEmail,
-      oldOtp,
-    );
+    // verfiy Otp for old email
+    const isOldOtpValid = await this.otpService.isEmailVerified(oldEmail);
     if (!isOldOtpValid) {
-      throw new UnauthorizedException('Invalid OTP for old email.');
+      throw new UnauthorizedException('Old email not verified with OTP.');
     }
 
-    // Verify OTP for new email
-    const isNewOtpValid = await this.otpService.verifyEmailOtp(
-      newEmail,
-      newOtp,
-    );
+    // verify Otp for new email
+    const isNewOtpValid = await this.otpService.isEmailVerified(newEmail);
     if (!isNewOtpValid) {
-      throw new UnauthorizedException('Invalid OTP for new email.');
+      throw new UnauthorizedException('New email not verified with OTP.');
     }
 
     const shop = await this.shopsModel.findOne({ email: oldEmail });

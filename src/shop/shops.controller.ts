@@ -144,9 +144,7 @@ export class ShopsController {
     const result = await this.shopsService.changePassword(
       changePasswordData.email,
       changePasswordData.oldPassword,
-      changePasswordData.newPassword,
-      changePasswordData.phoneNumber,
-      changePasswordData.otp,
+      changePasswordData.newPassword
     );
     return {
       data: result,
@@ -159,9 +157,7 @@ export class ShopsController {
   async changeEmail(@Body() changeEmailData: ChangeShopEmailDto) {
     const result = await this.shopsService.changeEmail(
       changeEmailData.oldEmail,
-      changeEmailData.newEmail,
-      changeEmailData.oldOtp,
-      changeEmailData.newOtp,
+      changeEmailData.newEmail
     );
     return {
       data: result,
@@ -174,9 +170,7 @@ export class ShopsController {
   async changePhoneNumber(@Body() changePhoneData: ChangeShopPhoneDto) {
     const result = await this.shopsService.changePhoneNumber(
       changePhoneData.oldPhoneNumber,
-      changePhoneData.newPhoneNumber,
-      changePhoneData.oldOtp,
-      changePhoneData.newOtp,
+      changePhoneData.newPhoneNumber
     );
     return {
       data: result,

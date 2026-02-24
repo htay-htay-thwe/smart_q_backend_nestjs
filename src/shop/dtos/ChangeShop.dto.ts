@@ -30,14 +30,6 @@ export class ChangeShopEmailDto {
   @IsEmail()
   @IsNotEmpty()
   newEmail: string;
-
-  @IsString()
-  @IsNotEmpty()
-  oldOtp: string;
-
-  @IsString()
-  @IsNotEmpty()
-  newOtp: string;
 }
 
 export class ChangeShopPhoneDto {
@@ -48,12 +40,4 @@ export class ChangeShopPhoneDto {
   @IsString()
   @IsNotEmpty()
   newPhoneNumber: string;
-
-  @IsString()
-  @IsNotEmpty()
-  oldOtp: string;
-
-  @IsString()
-  @IsNotEmpty()
-  newOtp: string;
 }
