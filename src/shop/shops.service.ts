@@ -205,30 +205,11 @@ export class ShopsService {
   async changePassword(
     email: string,
     newPassword: string,
-    phoneNumber: string,
   ) {
     const shop = await this.shopsModel.findOne({ email });
 
     if (!shop) {
       throw new NotFoundException('Shop not found.');
-    }
-
-    // Check if password exists
-    if (!shop.password) {
-      throw new UnauthorizedException(
-        'Password not set for this account. Please contact support.',
-      );
-    }
-
-    // Verify OTP for phone number
-    const isPhoneVerified = await this.otpService.isPhoneVerified(phoneNumber);
-    if (!isPhoneVerified) {
-      throw new UnauthorizedException('Invalid OTP for phone number verification.');
-    }
-
-    const isEmailVerified = await this.otpService.isEmailVerified(email);
-    if (!isEmailVerified) {
-      throw new UnauthorizedException('Invalid OTP for email verification.');
     }
 
     shop.password = await bcrypt.hash(newPassword, 10);

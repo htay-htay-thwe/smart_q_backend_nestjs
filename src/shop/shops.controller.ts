@@ -143,7 +143,6 @@ export class ShopsController {
   async changePassword(@Body() changePasswordData: ChangeShopPasswordDto) {
     const result = await this.shopsService.changePassword(
       changePasswordData.email,
-      changePasswordData.oldPassword,
       changePasswordData.newPassword
     );
     return {
