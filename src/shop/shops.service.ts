@@ -20,6 +20,7 @@ import { OtpService } from '../customer/otp.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
 import { Otp } from '../schemas/Otp.schema';
+import { UpdateShopDto } from './dtos/ChangeShop.dto';
 
 @Injectable()
 export class ShopsService {
@@ -202,10 +203,7 @@ export class ShopsService {
       .exec();
   }
 
-  async changePassword(
-    email: string,
-    newPassword: string,
-  ) {
+  async changePassword(email: string, newPassword: string) {
     const shop = await this.shopsModel.findOne({ email });
 
     if (!shop) {
@@ -217,20 +215,21 @@ export class ShopsService {
     return { message: 'Password changed successfully.' };
   }
 
-  async changePhoneNumber(
-    oldPhoneNumber: string,
-    newPhoneNumber: string
-  ) {
+  async changePhoneNumber(oldPhoneNumber: string, newPhoneNumber: string) {
     // Verify OTP for old phone number
     const isOldOtpValid = await this.otpService.isPhoneVerified(oldPhoneNumber);
     if (!isOldOtpValid) {
-      throw new UnauthorizedException('Old phone number not verified with OTP.');
+      throw new UnauthorizedException(
+        'Old phone number not verified with OTP.',
+      );
     }
 
     // Verify OTP for new phone number
     const isNewOtpValid = await this.otpService.isPhoneVerified(newPhoneNumber);
     if (!isNewOtpValid) {
-      throw new UnauthorizedException('New phone number not verified with OTP.');
+      throw new UnauthorizedException(
+        'New phone number not verified with OTP.',
+      );
     }
 
     const shop = await this.shopsModel.findOne({
@@ -254,10 +253,7 @@ export class ShopsService {
     return shopData;
   }
 
-  async changeEmail(
-    oldEmail: string,
-    newEmail: string,
-  ) {
+  async changeEmail(oldEmail: string, newEmail: string) {
     // verfiy Otp for old email
     const isOldOtpValid = await this.otpService.isEmailVerified(oldEmail);
     if (!isOldOtpValid) {
@@ -354,5 +350,32 @@ export class ShopsService {
         'Failed to upload image. Please check Cloudinary configuration.',
       );
     }
+  }
+
+  async updateShopInformation(data: UpdateShopDto) {
+    const shop = await this.shopsModel.findById(data.shop_id);
+    if (!shop) {
+      throw new NotFoundException('Shop not found.');
+    }
+    shop.shopTypes = data.shopTypeId;
+    shop.description = data.description;
+    shop.tableTypes = [];
+    // Update or create table types for Two, Four, Six
+    const tableTypes = [
+      { type: '2-seat', capacity: data.tableTwo },
+      { type: '4-seat', capacity: data.tableFour },
+      { type: '6-seat', capacity: data.tableSix },
+    ];
+    for (const t of tableTypes) {
+      const updatedTableType = await this.tableTypesModel.findOneAndUpdate(
+        { shopId: data.shop_id, type: t.type },
+        { capacity: t.capacity, left_capacity: t.capacity },
+        { new: true, upsert: true },
+      );
+      shop.tableTypes.push(updatedTableType);
+    }
+    await shop.save();
+    const shopData = await this.shopsModel.findById(data.shop_id);
+    return shopData;
   }
 }

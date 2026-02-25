@@ -32,6 +32,7 @@ import {
   ChangeShopPasswordDto,
   ChangeShopEmailDto,
   ChangeShopPhoneDto,
+  UpdateShopDto,
 } from './dtos/ChangeShop.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -143,7 +144,7 @@ export class ShopsController {
   async changePassword(@Body() changePasswordData: ChangeShopPasswordDto) {
     const result = await this.shopsService.changePassword(
       changePasswordData.email,
-      changePasswordData.newPassword
+      changePasswordData.newPassword,
     );
     return {
       data: result,
@@ -156,7 +157,7 @@ export class ShopsController {
   async changeEmail(@Body() changeEmailData: ChangeShopEmailDto) {
     const result = await this.shopsService.changeEmail(
       changeEmailData.oldEmail,
-      changeEmailData.newEmail
+      changeEmailData.newEmail,
     );
     return {
       data: result,
@@ -169,7 +170,7 @@ export class ShopsController {
   async changePhoneNumber(@Body() changePhoneData: ChangeShopPhoneDto) {
     const result = await this.shopsService.changePhoneNumber(
       changePhoneData.oldPhoneNumber,
-      changePhoneData.newPhoneNumber
+      changePhoneData.newPhoneNumber,
     );
     return {
       data: result,
@@ -209,6 +210,15 @@ export class ShopsController {
     return {
       data: shopData,
       message: 'Shop Image changed successfully.',
+    };
+  }
+
+  @Patch('change-shop-information')
+  async changeShopInformation(@Body() data: UpdateShopDto) {
+    const shopData = await this.shopsService.updateShopInformation(data);
+    return {
+      data: shopData,
+      message: 'Shop Information changed successfully.',
     };
   }
 }

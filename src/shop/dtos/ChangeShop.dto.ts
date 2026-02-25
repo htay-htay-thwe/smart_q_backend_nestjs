@@ -41,3 +41,29 @@ export class ChangeShopPhoneDto {
   @IsNotEmpty()
   newPhoneNumber: string;
 }
+
+export class UpdateShopDto {
+  @IsString()
+  @IsNotEmpty()
+  shop_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  shopTypeId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  tableTwo: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  tableFour: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  tableSix: number;
+}
