@@ -377,7 +377,11 @@ export class ShopsService {
       shop.tableTypes.push(updatedTableType);
     }
     await shop.save();
-    const shopData = await this.shopsModel.findById(data.shop_id);
+    const shopData = await this.shopsModel
+      .findById(data.shop_id)
+      .populate('shopTypes')
+      .populate('tableTypes')
+      .exec();
     return shopData;
   }
 }
