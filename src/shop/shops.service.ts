@@ -21,12 +21,16 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
 import { Types } from 'mongoose';
 import { UpdateShopDto } from './dtos/ChangeShop.dto';
+import { QueueHistory } from '../schemas/QueueHistory.schema';
+import mongoose from 'mongoose';
 
 @Injectable()
 export class ShopsService {
   constructor(
     @InjectModel(Shops.name) private shopsModel: Model<Shops>,
     @InjectModel(TableTypes.name) private tableTypesModel: Model<TableTypes>,
+    @InjectModel(QueueHistory.name)
+    private QueueHistorySchema: Model<QueueHistory>,
     private authService: AuthService,
     private otpService: OtpService,
     private cloudinaryService: CloudinaryService,
@@ -383,5 +387,48 @@ export class ShopsService {
       .populate('tableTypes')
       .exec();
     return shopData;
+  }
+
+  async findMostQueueUsers(id: string) {
+    return this.QueueHistorySchema.aggregate([
+      {
+        $match: {
+          shop_id: new mongoose.Types.ObjectId(id),
+          status: 'finished',
+        },
+      },
+      {
+        $group: {
+          _id: '$customer_id',
+          totalQueues: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { totalQueues: -1 },
+      },
+      {
+        $limit: 10,
+      },
+      {
+        $lookup: {
+          from: 'customers',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'customer',
+        },
+      },
+      {
+        $unwind: '$customer',
+      },
+      {
+        $project: {
+          _id: 0,
+          customer_id: '$_id',
+          totalQueues: 1,
+          name: '$customer.name',
+          profileImage: '$customer.profileImg',
+        },
+      },
+    ]);
   }
 }

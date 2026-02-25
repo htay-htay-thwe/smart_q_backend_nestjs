@@ -221,4 +221,12 @@ export class ShopsController {
       message: 'Shop Information changed successfully.',
     };
   }
+
+  @Get('most-queue-users')
+  async getMostQueueUsers(@Body('id') shopId: string) {
+    const result = await this.shopsService.findMostQueueUsers(shopId);
+    return {
+      data: result,
+    };
+  }
 }
