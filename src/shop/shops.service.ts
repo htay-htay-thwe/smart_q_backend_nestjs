@@ -357,7 +357,7 @@ export class ShopsService {
     if (!shop) {
       throw new NotFoundException('Shop not found.');
     }
-    shop.shopTypes = data.shopTypeId;
+    shop.shopTypes = new Types.ObjectId(data.shopTypeId);
     shop.description = data.description;
     shop.tableTypes = [];
     // Update or create table types for Two, Four, Six
