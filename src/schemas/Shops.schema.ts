@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { TableTypes } from './TableTypes.schema';
 import mongoose from 'mongoose';
-import { ShopTypes } from './ShopTypes.schema';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Shops {
@@ -52,7 +52,7 @@ export class Shops {
     ref: 'ShopTypes',
     required: true,
   })
-  shopTypes: mongoose.Schema.Types.ObjectId;
+  shopTypes: Types.ObjectId;
 
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'TableTypes' }],
