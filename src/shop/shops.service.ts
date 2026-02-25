@@ -19,8 +19,8 @@ import { AuthService } from '../auth/auth.service';
 import { OtpService } from '../customer/otp.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
-import { Otp } from '../schemas/Otp.schema';
 import { UpdateShopDto } from './dtos/ChangeShop.dto';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class ShopsService {
@@ -357,7 +357,7 @@ export class ShopsService {
     if (!shop) {
       throw new NotFoundException('Shop not found.');
     }
-    shop.shopTypes = data.shopTypeId;
+    shop.shopTypes = new Types.ObjectId(data.shopTypeId);
     shop.description = data.description;
     shop.tableTypes = [];
     // Update or create table types for Two, Four, Six
