@@ -357,7 +357,7 @@ export class ShopsService {
     if (!shop) {
       throw new NotFoundException('Shop not found.');
     }
- 
+
     shop.description = data.description;
     shop.tableTypes = [];
     // Update or create table types for Two, Four, Six
@@ -370,7 +370,7 @@ export class ShopsService {
       const updatedTableType = await this.tableTypesModel.findOneAndUpdate(
         { shopId: data.shop_id, type: t.type },
         { capacity: t.capacity, left_capacity: t.capacity },
-        { new: true, upsert: true },
+        { returnDocument: 'after', upsert: true },
       );
       shop.tableTypes.push(updatedTableType);
     }
