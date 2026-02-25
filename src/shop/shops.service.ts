@@ -407,7 +407,7 @@ export class ShopsService {
         $sort: { totalQueues: -1 },
       },
       {
-        $limit: 10,
+        $limit: 5,
       },
       {
         $lookup: {
@@ -427,6 +427,41 @@ export class ShopsService {
           totalQueues: 1,
           name: '$customer.name',
           profileImage: '$customer.profileImg',
+        },
+      },
+    ]);
+  }
+
+  async getFinishedQueuesPerMonth(shopId: string) {
+    return this.QueueHistorySchema.aggregate([
+      {
+        $match: {
+          shop_id: new mongoose.Types.ObjectId(shopId),
+          status: 'finished',
+          completedAt: { $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$completedAt' },
+            month: { $month: '$completedAt' },
+          },
+          totalFinished: { $sum: 1 },
+        },
+      },
+      {
+        $sort: {
+          '_id.year': 1,
+          '_id.month': 1,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          year: '$_id.year',
+          month: '$_id.month',
+          totalFinished: 1,
         },
       },
     ]);

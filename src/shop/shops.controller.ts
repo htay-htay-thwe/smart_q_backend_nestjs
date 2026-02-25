@@ -225,9 +225,11 @@ export class ShopsController {
 
   @Get('most-queue-users/:id')
   async getMostQueueUsers(@Param('id') shopId: string) {
-    const result = await this.shopsService.findMostQueueUsers(shopId);
-    return {
-      data: result,
-    };
+    return this.shopsService.findMostQueueUsers(shopId);
+  }
+
+  @Get('finished-queues-per-month/:id')
+  async getFinishedQueuesPerMonth(@Param('id') shopId: string) {
+    return this.shopsService.getFinishedQueuesPerMonth(shopId);
   }
 }
