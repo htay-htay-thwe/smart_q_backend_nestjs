@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Param,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
@@ -222,8 +223,8 @@ export class ShopsController {
     };
   }
 
-  @Get('most-queue-users')
-  async getMostQueueUsers(@Body('id') shopId: string) {
+  @Get('most-queue-users/:id')
+  async getMostQueueUsers(@Param('id') shopId: string) {
     const result = await this.shopsService.findMostQueueUsers(shopId);
     return {
       data: result,
