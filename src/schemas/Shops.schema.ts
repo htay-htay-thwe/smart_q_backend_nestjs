@@ -52,7 +52,7 @@ export class Shops {
     ref: 'ShopTypes',
     required: true,
   })
-  shopTypes: ShopTypes;
+  shopTypes: mongoose.Schema.Types.ObjectId;
 
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'TableTypes' }],

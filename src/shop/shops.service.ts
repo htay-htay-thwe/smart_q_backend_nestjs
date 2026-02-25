@@ -19,8 +19,8 @@ import { AuthService } from '../auth/auth.service';
 import { OtpService } from '../customer/otp.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
-import { UpdateShopDto } from './dtos/ChangeShop.dto';
 import { Types } from 'mongoose';
+import { UpdateShopDto } from './dtos/ChangeShop.dto';
 
 @Injectable()
 export class ShopsService {
