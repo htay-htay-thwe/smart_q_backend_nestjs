@@ -359,6 +359,8 @@ export class ShopsService {
     }
 
     shop.description = data.description;
+    const shopType = new Types.ObjectId(data.shopTypeId);
+    shop.shopTypes = shopType;
     shop.tableTypes = [];
     // Update or create table types for Two, Four, Six
     const tableTypes = [
