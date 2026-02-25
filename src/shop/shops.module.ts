@@ -9,6 +9,10 @@ import { Otp, OtpSchema } from '../schemas/Otp.schema';
 import { AuthModule } from '../auth/auth.module';
 import { OtpService } from '../customer/otp.service';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import {
+  QueueHistory,
+  QueueHistorySchema,
+} from '../schemas/QueueHistory.schema';
 
 @Module({
   imports: [
@@ -28,6 +32,10 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
       {
         name: Otp.name,
         schema: OtpSchema,
+      },
+      {
+        name: QueueHistory.name,
+        schema: QueueHistorySchema,
       },
     ]),
     AuthModule,
