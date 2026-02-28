@@ -1,26 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import * as sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class EmailService {
+  private sgMail;
+
   constructor() {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+    this.sgMail = require('@sendgrid/mail');
+    this.sgMail.setApiKey(process.env.SENDGRID_API_KEY);
   }
 
   async sendVerificationCode(email: string, otp: string) {
-    if (!process.env.SENDGRID_SENDER_EMAIL) {
-      throw new Error('SENDGRID_SENDER_EMAIL environment variable is not set');
-    }
     const msg = {
       to: email,
-      from: process.env.SENDGRID_SENDER_EMAIL, // must be verified in SendGrid
+      from: process.env.SENDGRID_SENDER_EMAIL,
       subject: 'Email Verification Code',
       text: `Your verification code is: ${otp}`,
       html: `<strong>Your verification code is: ${otp}</strong>`,
     };
 
     try {
-      await sgMail.send(msg);
+      await this.sgMail.send(msg);
       console.log('Email sent successfully');
       return true;
     } catch (error) {
