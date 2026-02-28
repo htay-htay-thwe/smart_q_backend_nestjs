@@ -166,35 +166,44 @@ export class QueuesService {
 
   async assignTable(assignTableData: AssignTableDto) {
     const { queue_id, table_no, table_type_id, shop_id } = assignTableData;
-    console.log('Assigning table:', assignTableData);
-    const queue = await this.queuesModel.findById(queue_id);
+
+    // 🔥 Single update instead of find + save
+    const queue = await this.queuesModel.findByIdAndUpdate(
+      queue_id,
+      {
+        table_no,
+        table_type_id,
+        shop_id,
+        status: 'seated',
+      },
+      { new: true },
+    );
+
     if (!queue) {
       throw new NotFoundException('Queue not found');
     }
 
     if (!queue.queue_qr) {
-      throw new Error('QR code not generated yet. Please generate QR first.');
+      throw new Error('QR code not generated yet.');
     }
 
-    queue.table_no = table_no;
-    queue.table_type_id = table_type_id;
-    queue.shop_id = shop_id;
-    queue.status = 'seated';
-    await queue.save();
+    // 🔥 Run these in parallel
+    await Promise.all([
+      this.tableStatusModel.create({
+        queue_id,
+        shop_id,
+        table_no,
+        table_type_id,
+        isActive: true,
+      }),
+      this.queueHistoryModel.create({
+        ...queue.toObject(),
+        completedAt: new Date(),
+      }),
+    ]);
 
-    const queueData = await this.tableStatusModel.create({
-      queue_id: queue_id,
-      shop_id: shop_id,
-      table_no: table_no,
-      table_type_id: table_type_id,
-      isActive: true,
-    });
-
-    await this.queueHistoryModel.create({
-      ...queue.toObject(),
-      completedAt: new Date(),
-    });
-    return this.getQueueById(queue_id);
+    // 🔥 Optional: remove this if frontend already has data
+    return queue; // instead of getQueueById()
   }
 
   async freeTableAndUpdateQueue(
@@ -202,53 +211,78 @@ export class QueuesService {
     table_no: string,
     table_type_id: string,
   ) {
-    const tableStatus = await this.tableStatusModel.findOneAndDelete({
-      shop_id,
-      table_no,
-      table_type_id,
-      isActive: true,
-    });
+    const session = await this.tableStatusModel.db.startSession();
+    session.startTransaction();
+    try {
+      const tableStatus = await this.tableStatusModel
+        .findOneAndDelete({
+          shop_id,
+          table_no,
+          table_type_id,
+          isActive: true,
+        })
+        .session(session);
 
-    if (!tableStatus) {
-      throw new NotFoundException('Active table not found');
+      if (!tableStatus) {
+        throw new NotFoundException('Active table not found');
+      }
+
+      const queue = await this.queuesModel
+        .findByIdAndUpdate(
+          tableStatus.queue_id,
+          { status: 'finished' },
+          { new: true },
+        )
+        .session(session);
+
+      if (queue) {
+        const { _id, ...queueData } = queue.toObject();
+        await this.queueHistoryModel.create(
+          [
+            {
+              ...queueData,
+              completedAt: new Date(),
+            },
+          ],
+          { session },
+        );
+
+        await this.queuesModel.deleteOne({ _id: queue._id }, { session });
+      }
+
+      // 3. Find the next waiting customer in the queue
+      const nextQueue = await this.queuesModel.findOneAndUpdate(
+        {
+          shop_id: shop_id,
+          table_type_id: table_type_id,
+          status: 'waiting',
+        },
+        {
+          status: 'Ready to seat',
+          estimated_wait_time: 0,
+        },
+        {
+          session,
+          sort: { queue_number: 1 },
+          new: true,
+        },
+      );
+
+      await session.commitTransaction();
+      session.endSession();
+
+      if (queue) {
+        this.queueGateway.notifyQueueUpdate(queue.shop_id);
+      }
+      return {
+        updatedQueue: nextQueue,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
     }
-
-    const queue = await this.queuesModel.findByIdAndUpdate(
-      tableStatus.queue_id,
-      { status: 'finished' },
-      { new: true },
-    );
-
-    if (queue) {
-      await Promise.all([
-        this.queueHistoryModel.create({
-          ...queue.toObject(),
-          completedAt: new Date(),
-        }),
-        this.queuesModel.deleteOne({ _id: queue._id }),
-      ]);
-    }
-
-    const nextQueue = await this.queuesModel.findOneAndUpdate(
-      {
-        shop_id,
-        table_type_id,
-        status: 'waiting',
-      },
-      {
-        status: 'Ready to seat',
-        estimated_wait_time: 0,
-      },
-      {
-        sort: { queue_number: 1 },
-        new: true,
-      },
-    );
-
-    // 🔥 notify immediately
-    this.queueGateway.notifyQueueUpdate(shop_id.toString());
-
-    return { updatedQueue: nextQueue };
   }
 
   async getTableStatus(shopId: string) {
