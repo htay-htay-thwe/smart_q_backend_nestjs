@@ -11,7 +11,7 @@ import { Customers } from '../schemas/Customers.schema';
 import { Model } from 'mongoose';
 import { CustomerInformationDto } from './dtos/CustomerInformation.dto';
 import { AuthService } from '../auth/auth.service';
-import { OtpService } from './otp.service';
+import { OtpService } from '../otp/otp.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
 import { CustomerLoginDto } from './dtos/CustomerLogin.dto';

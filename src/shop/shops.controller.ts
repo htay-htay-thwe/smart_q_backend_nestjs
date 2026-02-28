@@ -22,7 +22,7 @@ import {
   type shopNameDto,
 } from './dtos/ShopInformation.dto';
 import { LoginDto } from './dtos/Login.dto';
-import { OtpService } from '../customer/otp.service';
+import { OtpService } from '../otp/otp.service';
 import {
   SendEmailOtpDto,
   SendPhoneOtpDto,

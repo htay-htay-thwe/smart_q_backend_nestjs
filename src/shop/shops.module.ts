@@ -7,7 +7,7 @@ import { ShopTypes, ShopTypesSchema } from '../schemas/ShopTypes.schema';
 import { TableTypes, TableTypesSchema } from '../schemas/TableTypes.schema';
 import { Otp, OtpSchema } from '../schemas/Otp.schema';
 import { AuthModule } from '../auth/auth.module';
-import { OtpService } from '../customer/otp.service';
+import { OtpService } from '../otp/otp.service';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import {
   QueueHistory,

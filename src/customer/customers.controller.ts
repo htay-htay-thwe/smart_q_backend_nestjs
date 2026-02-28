@@ -22,7 +22,7 @@ import {
   ChangePasswordDto,
   ChangePhoneNumberDto,
 } from './dtos/ChangePassword.dto';
-import { OtpService } from './otp.service';
+import { OtpService } from '../otp/otp.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   SendOtpDto,

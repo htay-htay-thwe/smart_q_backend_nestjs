@@ -2,10 +2,12 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Otp } from '../schemas/Otp.schema';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class OtpService {
-  constructor(@InjectModel(Otp.name) private otpModel: Model<Otp>) {}
+  constructor(@InjectModel(Otp.name) private otpModel: Model<Otp>,
+  private emailService: EmailService) {}
 
   generateOtp(): string {
     // Generate 6-digit OTP
@@ -70,6 +72,10 @@ export class OtpService {
     // TODO: Integrate with Email service (SendGrid, AWS SES, etc.)
     // For now, we'll just log it (remove this in production)
     console.log(`OTP for email ${email}: ${otp}`);
+    await this.emailService.sendVerificationCode(
+       email,
+       otp
+        );
 
     return {
       success: true,

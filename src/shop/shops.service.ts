@@ -16,7 +16,7 @@ import {
 } from './dtos/ShopInformation.dto';
 import { LoginDto } from './dtos/Login.dto';
 import { AuthService } from '../auth/auth.service';
-import { OtpService } from '../customer/otp.service';
+import { OtpService } from '../otp/otp.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
 import { Types } from 'mongoose';
