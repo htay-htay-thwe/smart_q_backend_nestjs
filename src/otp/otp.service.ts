@@ -72,11 +72,11 @@ export class OtpService {
     // TODO: Integrate with Email service (SendGrid, AWS SES, etc.)
     // For now, we'll just log it (remove this in production)
     console.log(`OTP for email ${email}: ${otp}`);
-    await this.emailService.sendVerificationCode(
+   const res = await this.emailService.sendVerificationCode(
        email,
        otp
         );
-
+console.log(res);
     return {
       success: true,
       message: `OTP sent to ${email} : ${otp}`,
