@@ -13,9 +13,9 @@ export class EmailService {
     const msg = {
       to: email,
       from: process.env.SENDGRID_SENDER_EMAIL,
-      subject: 'Email Verification Code',
+      subject: 'Email Verification Code - SmartQ',
       text: `Your verification code is: ${otp}`,
-      html: `<strong>Your verification code is: ${otp}</strong>`,
+      html: `<strong>Your verification code is: <h1>${otp}</h1></strong>`,
     };
 
     try {
