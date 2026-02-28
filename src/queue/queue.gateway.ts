@@ -32,7 +32,12 @@ export class QueueGateway {
   }
 
   notifyQueueUpdate(shopId: string) {
-    console.log(`Notifying clients in shop room: ${shopId} about queue update`);
+    console.log('Emitting to room:', JSON.stringify(shopId));
+
+    console.log(
+      'Existing rooms:',
+      Array.from(this.server.sockets.adapter.rooms.keys()),
+    );
     this.server.to(shopId).emit('freeTable', {
       message: 'A table has been freed. Please check the queue status.',
     });
