@@ -7,6 +7,8 @@ import { Otp, OtpSchema } from '../schemas/Otp.schema';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from '../auth/auth.module';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { EmailService } from '../email/email.service';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -16,8 +18,9 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
     ]),
     AuthModule,
     CloudinaryModule,
+    EmailModule,
   ],
   controllers: [CustomersController],
-  providers: [CustomersService, OtpService],
+  providers: [CustomersService, OtpService,EmailService],
 })
 export class CustomersModule {}

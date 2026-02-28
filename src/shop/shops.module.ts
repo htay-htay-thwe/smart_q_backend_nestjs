@@ -13,6 +13,8 @@ import {
   QueueHistory,
   QueueHistorySchema,
 } from '../schemas/QueueHistory.schema';
+import { EmailModule } from '../email/email.module';
+import { EmailService } from '../email/email.service';
 
 @Module({
   imports: [
@@ -40,8 +42,9 @@ import {
     ]),
     AuthModule,
     CloudinaryModule,
+    EmailModule,
   ],
   controllers: [ShopsController],
-  providers: [ShopsService, OtpService],
+  providers: [ShopsService, OtpService,EmailService],
 })
 export class ShopsModule {}
