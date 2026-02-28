@@ -8,6 +8,7 @@ import { Shops } from '../schemas/Shops.schema';
 import { TableTypes } from '../schemas/TableTypes.schema';
 import { AssignTableDto } from './dtos/assignTable.dto';
 import { QueueHistory } from '../schemas/QueueHistory.schema';
+import { QueueGateway } from './queue.gateway';
 
 @Injectable()
 export class QueuesService {
@@ -20,6 +21,7 @@ export class QueuesService {
     @InjectModel(TableTypes.name) private tableTypesModel: Model<TableTypes>,
     @InjectModel(QueueHistory.name)
     private queueHistoryModel: Model<QueueHistory>,
+    private queueGateway: QueueGateway,
   ) {}
 
   async createQueue(queueData: queueData) {
@@ -192,7 +194,6 @@ export class QueuesService {
       ...queue.toObject(),
       completedAt: new Date(),
     });
-
     return await this.getQueueById(queue_id);
   }
 
@@ -260,6 +261,10 @@ export class QueuesService {
 
       await session.commitTransaction();
       session.endSession();
+
+      if (queue) {
+        this.queueGateway.notifyQueueUpdate(queue.shop_id);
+      }
       return {
         updatedQueue: nextQueue,
       };

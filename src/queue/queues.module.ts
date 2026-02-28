@@ -11,6 +11,7 @@ import {
   QueueHistorySchema,
 } from '../schemas/QueueHistory.schema';
 import { AuthModule } from '../auth/auth.module';
+import { QueueGateway } from './queue.gateway';
 
 @Module({
   imports: [
@@ -27,6 +28,6 @@ import { AuthModule } from '../auth/auth.module';
     ]),
   ],
   controllers: [QueuesController],
-  providers: [QueuesService],
+  providers: [QueuesService, QueueGateway],
 })
 export class QueuesModule {}
