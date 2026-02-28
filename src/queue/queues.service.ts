@@ -110,7 +110,7 @@ export class QueuesService {
   }
 
   async getAllQueues() {
-    return await this.queuesModel
+    return this.queuesModel
       .find()
       .populate('customer_id')
       .populate('shop_id')
@@ -119,7 +119,7 @@ export class QueuesService {
   }
 
   async getQueueById(id: string) {
-    return await this.queuesModel
+    return this.queuesModel
       .findById(id)
       .populate('customer_id')
       .populate('shop_id')
@@ -127,7 +127,7 @@ export class QueuesService {
   }
 
   async getQueuesByShop(shopId: string) {
-    return await this.queuesModel
+    return this.queuesModel
       .find({ shop_id: new Types.ObjectId(shopId) as any })
       .populate('customer_id')
       .populate('shop_id')
@@ -136,7 +136,7 @@ export class QueuesService {
   }
 
   async getQueuesByCustomer(customerId: string) {
-    return await this.queuesModel
+    return this.queuesModel
       .find({ customer_id: new Types.ObjectId(customerId) as any })
       .populate('customer_id')
       .populate('shop_id')
@@ -161,7 +161,7 @@ export class QueuesService {
     );
     console.log(`QR Code generated: ${queueQr}`);
 
-    return await this.getQueueById(queueId);
+    return this.getQueueById(queueId);
   }
 
   async assignTable(assignTableData: AssignTableDto) {
@@ -194,7 +194,7 @@ export class QueuesService {
       ...queue.toObject(),
       completedAt: new Date(),
     });
-    return await this.getQueueById(queue_id);
+    return this.getQueueById(queue_id);
   }
 
   async freeTableAndUpdateQueue(
