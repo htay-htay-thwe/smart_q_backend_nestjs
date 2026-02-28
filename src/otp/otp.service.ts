@@ -6,8 +6,10 @@ import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class OtpService {
-  constructor(@InjectModel(Otp.name) private otpModel: Model<Otp>,
-  private emailService: EmailService) {}
+  constructor(
+    @InjectModel(Otp.name) private otpModel: Model<Otp>,
+    private emailService: EmailService,
+  ) {}
 
   generateOtp(): string {
     // Generate 6-digit OTP
@@ -49,38 +51,40 @@ export class OtpService {
   async sendOtpToEmail(
     email: string,
   ): Promise<{ success: boolean; message: string }> {
-    // Generate OTP
-    const otp = this.generateOtp();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    try {
+      // Generate OTP
+      const otp = this.generateOtp();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    // Delete any existing OTPs for this email
-    await this.otpModel.deleteMany({
-      email,
-      type: 'email',
-      isVerified: false,
-    });
+      // Delete any existing OTPs for this email
+      await this.otpModel.deleteMany({
+        email,
+        type: 'email',
+        isVerified: false,
+      });
 
-    // Save new OTP
-    await this.otpModel.create({
-      email,
-      otp,
-      expiresAt,
-      isVerified: false,
-      type: 'email',
-    });
+      // Save new OTP
+      await this.otpModel.create({
+        email,
+        otp,
+        expiresAt,
+        isVerified: false,
+        type: 'email',
+      });
 
-    // TODO: Integrate with Email service (SendGrid, AWS SES, etc.)
-    // For now, we'll just log it (remove this in production)
-    console.log(`OTP for email ${email}: ${otp}`);
-   const res = await this.emailService.sendVerificationCode(
-       email,
-       otp
-        );
-console.log(res);
-    return {
-      success: true,
-      message: `OTP sent to ${email} : ${otp}`,
-    };
+      const res = await this.emailService.sendVerificationCode(email, otp);
+      console.log(res);
+      return {
+        success: res,
+        message: `OTP sent to ${email}`,
+      };
+    } catch (error) {
+      console.error('SEND OTP ERROR:', error);
+      return {
+        success: false,
+        message: 'Internal server error while sending OTP',
+      };
+    }
   }
 
   async verifyPhoneOtp(phoneNumber: string, otp: string): Promise<boolean> {
