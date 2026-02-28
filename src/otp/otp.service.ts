@@ -41,8 +41,6 @@ export class OtpService {
       type: 'phone',
     });
     // TODO: Integrate with SMS service (Twilio, AWS SNS, etc.)
-    // For now, we'll just log it (remove this in production)
-    console.log(`OTP for phone ${phoneNumber}: ${otp}`);
     // const res = await this.smsService.sendSms(
     //   phoneNumber,
     //   `Your verification code is: ${otp}`,

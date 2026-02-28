@@ -3,11 +3,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Queues } from '../schemas/Queues.schema';
 import { queueData } from './dtos/queueData.dto';
 import { Model, Types } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
 import { TableStatus } from '../schemas/TableStatus.schema';
 import { Shops } from '../schemas/Shops.schema';
 import { TableTypes } from '../schemas/TableTypes.schema';
-import { queue } from 'rxjs';
 import { AssignTableDto } from './dtos/assignTable.dto';
 import { QueueHistory } from '../schemas/QueueHistory.schema';
 

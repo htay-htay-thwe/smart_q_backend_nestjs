@@ -5,6 +5,7 @@ import {
   ValidateNested,
   IsArray,
   IsOptional,
+  IsEmail,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
@@ -41,7 +42,7 @@ export class ShopInformationDto {
   @IsNotEmpty()
   phoneNumber: string;
 
-  @IsString()
+  @IsEmail()
   @IsNotEmpty()
   email: string;
 

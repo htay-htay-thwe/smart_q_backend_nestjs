@@ -5,7 +5,6 @@ import { QueuesController } from './queues.controller';
 import { QueuesService } from './queues.service';
 import { TableStatus, TableStatusSchema } from '../schemas/TableStatus.schema';
 import { Shops, ShopsSchema } from '../schemas/Shops.schema';
-import { table } from 'console';
 import { TableTypes, TableTypesSchema } from '../schemas/TableTypes.schema';
 import {
   QueueHistory,
