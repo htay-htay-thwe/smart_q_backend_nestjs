@@ -54,12 +54,6 @@ export class QueuesController {
     };
   }
 
-  @Get(':id')
-  async getQueueById(@Param('id') id: string) {
-    const queue = await this.queuesService.getQueueById(id);
-    return { data: queue };
-  }
-
   @Patch('generate-qr')
   async generateQrCode(@Body() generateQrData: GenerateQrDto) {
     const queue = await this.queuesService.generateQrCode(
@@ -104,5 +98,11 @@ export class QueuesController {
       data: result,
       message: 'Table freed and next customer updated',
     };
+  }
+
+  @Get(':id')
+  async getQueueById(@Param('id') id: string) {
+    const queue = await this.queuesService.getQueueById(id);
+    return { data: queue };
   }
 }
