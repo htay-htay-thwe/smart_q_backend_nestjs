@@ -9,6 +9,9 @@ import { AuthModule } from '../auth/auth.module';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { EmailService } from '../email/email.service';
 import { EmailModule } from '../email/email.module';
+import { SmsService } from '../phone/phone.service';
+import { Sms } from 'twilio/lib/twiml/VoiceResponse';
+import { PhoneModule } from '../phone/phone.module';
 
 @Module({
   imports: [
@@ -19,8 +22,9 @@ import { EmailModule } from '../email/email.module';
     AuthModule,
     CloudinaryModule,
     EmailModule,
+    PhoneModule,
   ],
   controllers: [CustomersController],
-  providers: [CustomersService, OtpService,EmailService],
+  providers: [CustomersService, OtpService, EmailService, SmsService],
 })
 export class CustomersModule {}

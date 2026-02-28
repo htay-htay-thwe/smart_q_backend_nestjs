@@ -3,12 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Otp } from '../schemas/Otp.schema';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../phone/phone.service';
 
 @Injectable()
 export class OtpService {
   constructor(
     @InjectModel(Otp.name) private otpModel: Model<Otp>,
     private emailService: EmailService,
+    private smsService: SmsService,
   ) {}
 
   generateOtp(): string {
@@ -41,11 +43,21 @@ export class OtpService {
     // TODO: Integrate with SMS service (Twilio, AWS SNS, etc.)
     // For now, we'll just log it (remove this in production)
     console.log(`OTP for phone ${phoneNumber}: ${otp}`);
-
-    return {
-      success: true,
-      message: `OTP sent to ${phoneNumber} : ${otp}`,
-    };
+    const res = await this.smsService.sendSms(
+      phoneNumber,
+      `Your verification code is: ${otp}`,
+    );
+    if (!res) {
+      return {
+        success: false,
+        message: 'Failed to send OTP SMS',
+      };
+    } else {
+      return {
+        success: true,
+        message: `OTP sent to ${phoneNumber}`,
+      };
+    }
   }
 
   async sendOtpToEmail(
@@ -73,11 +85,17 @@ export class OtpService {
       });
 
       const res = await this.emailService.sendVerificationCode(email, otp);
-      console.log(res);
-      return {
-        success: res,
-        message: `OTP sent to ${email}`,
-      };
+      if (!res) {
+        return {
+          success: false,
+          message: 'Failed to send OTP email',
+        };
+      } else {
+        return {
+          success: true,
+          message: `OTP sent to ${email}`,
+        };
+      }
     } catch (error) {
       console.error('SEND OTP ERROR:', error);
       return {
