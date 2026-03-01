@@ -41,24 +41,18 @@ export class QueuesService {
         shopId: queueData.shop_id,
       })
       .select('capacity');
-    console.log('totalTablesDoc', totalTablesDoc);
-
     const totalTables = totalTablesDoc?.capacity || 0;
-
     const occupiedTables = await this.tableStatusModel.countDocuments({
       shop_id: queueData.shop_id,
       table_type_id: queueData.table_type_id,
       isActive: true,
     });
-    console.log('totalTables', totalTables);
-    console.log('occupiedTables', occupiedTables);
 
     const occupiedTblAtQueue = await this.queuesModel.countDocuments({
       shop_id: queueData.shop_id,
       table_type_id: queueData.table_type_id,
       status: { $in: ['Ready to seat', 'qr-scanned', 'seated'] },
     });
-    console.log('occupiedTblAtQueue', occupiedTblAtQueue);
     const hasAvailableTable =
       occupiedTables < totalTables && occupiedTblAtQueue < totalTables;
 
@@ -105,7 +99,14 @@ export class QueuesService {
     });
 
     const savedQueue = await newQueue.save();
-
+    const tableType = await this.tableTypesModel
+      .findById(queueData.table_type_id)
+      .select('type')
+      .lean();
+    this.queueGateway.notifyCustomerQueue(queueData.shop_id, {
+      table_type_id: queueData.table_type_id,
+      table_type_name: tableType?.type ?? null,
+    });
     return savedQueue;
   }
 
@@ -186,8 +187,6 @@ export class QueuesService {
     if (!queue.queue_qr) {
       throw new Error('QR code not generated yet.');
     }
-
-    // 🔥 Run these in parallel
     await Promise.all([
       this.tableStatusModel.create({
         queue_id,
@@ -202,10 +201,6 @@ export class QueuesService {
       }),
     ]);
     return queue;
-  }
-
-  async noti(shop_id: string) {
-    this.queueGateway.notifyQueueUpdate(shop_id);
   }
 
   async freeTableAndUpdateQueue(
@@ -294,9 +289,7 @@ export class QueuesService {
   }
 
   async getTableStatus(shopId: string) {
-    console.log('Fetching table status for shop:', shopId);
     const tables = await this.tableStatusModel.find({ shop_id: shopId }).lean();
-
     return tables;
   }
 

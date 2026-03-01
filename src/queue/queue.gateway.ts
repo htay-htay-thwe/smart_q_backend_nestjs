@@ -46,4 +46,25 @@ export class QueueGateway {
       table_type_name: payload?.table_type_name ?? null,
     });
   }
+
+  notifyCustomerQueue(
+    shopId: string,
+    payload?: {
+      table_type_id?: string;
+      table_type_name?: string | null;
+      customer_name?: string;
+    },
+  ) {
+    console.log('Emitting to room:', JSON.stringify(shopId));
+
+    console.log(
+      'Existing rooms:',
+      Array.from(this.server.sockets.adapter.rooms.keys()),
+    );
+    this.server.to(shopId).emit('newCustomerQueue', {
+      table_type_id: payload?.table_type_id ?? null,
+      table_type_name: payload?.table_type_name ?? null,
+      customer_name: payload?.customer_name ?? null,
+    });
+  }
 }
