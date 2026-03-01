@@ -103,7 +103,7 @@ export class QueuesService {
       .findById(queueData.table_type_id)
       .select('type')
       .lean();
-    this.queueGateway.notifyCustomerQueue(queueData.shop_id, {
+    this.queueGateway.notifyCustomerQueue(queueData.shop_id.toString(), {
       table_type_id: queueData.table_type_id,
       table_type_name: tableType?.type ?? null,
     });
@@ -266,6 +266,36 @@ export class QueuesService {
       );
 
       await session.commitTransaction();
+
+      // Recalculate estimated_wait_time for ALL remaining waiting customers
+      // in this shop+table_type so the cron thresholds stay accurate.
+      const remainingWaiting = await this.queuesModel
+        .find({ shop_id, table_type_id, status: 'waiting' })
+        .sort({ queue_number: 1 })
+        .lean();
+
+      const totalTables = await this.tableTypesModel
+        .findById(table_type_id)
+        .select('capacity')
+        .lean()
+        .then((doc) => doc?.capacity ?? 1);
+
+      const AVERAGE_SERVICE_TIME = 60;
+      for (let i = 0; i < remainingWaiting.length; i++) {
+        const position = i + 1;
+        const newWaitTime =
+          Math.ceil(position / totalTables) * AVERAGE_SERVICE_TIME;
+        await this.queuesModel.updateOne(
+          { _id: remainingWaiting[i]._id },
+          {
+            estimated_wait_time: newWaitTime,
+            // Reset notification flags so updated thresholds can re-fire
+            notified_20min: false,
+            notified_10min: false,
+            notified_5min: false,
+          },
+        );
+      }
 
       const tableType = await this.tableTypesModel
         .findById(table_type_id)

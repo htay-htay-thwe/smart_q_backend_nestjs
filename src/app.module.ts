@@ -7,12 +7,14 @@ import { TableTypesModule } from './table-types/table-types.module';
 import { CustomersModule } from './customer/customers.module';
 import { AuthModule } from './auth/auth.module';
 import { QueuesModule } from './queue/queues.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     ShopsModule,
     ShopTypesModule,
     TableTypesModule,

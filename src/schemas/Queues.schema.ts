@@ -1,7 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { Shops } from './Shops.schema';
-import { Customers } from './Customers.schema';
 
 @Schema({ timestamps: true })
 export class Queues {
@@ -28,6 +26,15 @@ export class Queues {
 
   @Prop({ required: false, default: false })
   notification_sent: boolean;
+
+  @Prop({ required: false, default: false })
+  notified_20min: boolean;
+
+  @Prop({ required: false, default: false })
+  notified_10min: boolean;
+
+  @Prop({ required: false, default: false })
+  notified_5min: boolean;
 
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
