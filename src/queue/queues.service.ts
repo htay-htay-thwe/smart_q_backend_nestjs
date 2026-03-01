@@ -272,10 +272,15 @@ export class QueuesService {
 
       await session.commitTransaction();
 
-      // Always notify the shop room so the staff UI refreshes and receives
-      // the notification bell update, regardless of whether a queue record
-      // existed for the freed table.
-      this.queueGateway.notifyQueueUpdate(shop_id);
+      const tableType = await this.tableTypesModel
+        .findById(table_type_id)
+        .select('type')
+        .lean();
+
+      this.queueGateway.notifyQueueUpdate(shop_id, {
+        table_type_id,
+        table_type_name: tableType?.type ?? null,
+      });
 
       return {
         updatedQueue: nextQueue,

@@ -31,7 +31,10 @@ export class QueueGateway {
     return `Joined shop room: ${shop_id}`;
   }
 
-  notifyQueueUpdate(shopId: string) {
+  notifyQueueUpdate(
+    shopId: string,
+    payload?: { table_type_id?: string; table_type_name?: string | null },
+  ) {
     console.log('Emitting to room:', JSON.stringify(shopId));
 
     console.log(
@@ -39,7 +42,8 @@ export class QueueGateway {
       Array.from(this.server.sockets.adapter.rooms.keys()),
     );
     this.server.to(shopId).emit('freeTable', {
-      message: 'A table has been freed. Please check the queue status.',
+      table_type_id: payload?.table_type_id ?? null,
+      table_type_name: payload?.table_type_name ?? null,
     });
   }
 }
