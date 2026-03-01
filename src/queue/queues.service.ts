@@ -201,9 +201,11 @@ export class QueuesService {
         completedAt: new Date(),
       }),
     ]);
+    return queue;
+  }
 
-    // 🔥 Optional: remove this if frontend already has data
-    return queue; // instead of getQueueById()
+  async noti(shop_id: string) {
+    this.queueGateway.notifyQueueUpdate(shop_id);
   }
 
   async freeTableAndUpdateQueue(

@@ -27,6 +27,12 @@ export class QueuesController {
     return { data: populatedQueue, message: 'Queue created successfully' };
   }
 
+  @Get('notify/:shopId')
+  async notifyShop(@Param('shopId') shopId: string) {
+    this.queuesService.noti(shopId);
+    return { message: 'Notification sent to shop' };
+  }
+
   @Get('all')
   async getAllQueues() {
     const queues = await this.queuesService.getAllQueues();
