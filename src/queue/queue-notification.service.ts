@@ -20,11 +20,6 @@ export class QueueNotificationService {
     private emailService: EmailService,
   ) {}
 
-  /**
-   * Runs every minute.
-   * For every 'waiting' queue, calculates remaining wait time and fires
-   * notifications at the 20-min, 10-min, and 5-min thresholds exactly once.
-   */
   @Cron(CronExpression.EVERY_MINUTE)
   async checkWaitTimes() {
     this.logger.debug('Checking queue wait times...');

@@ -358,4 +358,32 @@ export class QueuesService {
       should_notify: true,
     }));
   }
+
+  /** DEV ONLY — directly trigger a threshold alert for any customer */
+  async testCustomerNotify(
+    customer_id: string,
+    queue_number: number,
+    shop_name: string,
+    remaining_minutes: number,
+  ) {
+    let title: string;
+    let message: string;
+
+    if (remaining_minutes <= 5) {
+      title = '🚨 Your table is almost ready!';
+      message = `Queue #${queue_number} — Please head to ${shop_name} right now!`;
+    } else if (remaining_minutes <= 10) {
+      title = '⏰ ~10 minutes remaining';
+      message = `Queue #${queue_number} — Start making your way to ${shop_name}.`;
+    } else {
+      title = '⏳ ~20 minutes remaining';
+      message = `Queue #${queue_number} — Please stay near ${shop_name}.`;
+    }
+
+    this.queueGateway.notifyCustomer(customer_id, {
+      title,
+      message,
+      remaining_minutes,
+    });
+  }
 }

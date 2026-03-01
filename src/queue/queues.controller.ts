@@ -105,4 +105,25 @@ export class QueuesController {
     const queue = await this.queuesService.getQueueById(id);
     return { data: queue };
   }
+
+  /** DEV ONLY — simulate a threshold alert to a specific customer */
+  @Post('test-customer-notify')
+  async testCustomerNotify(
+    @Body()
+    body: {
+      customer_id: string;
+      queue_number: number;
+      shop_name: string;
+      remaining_minutes: number;
+    },
+  ) {
+    const { customer_id, queue_number, shop_name, remaining_minutes } = body;
+    await this.queuesService.testCustomerNotify(
+      customer_id,
+      queue_number,
+      shop_name,
+      remaining_minutes,
+    );
+    return { message: `Alert sent to customer ${customer_id}` };
+  }
 }
