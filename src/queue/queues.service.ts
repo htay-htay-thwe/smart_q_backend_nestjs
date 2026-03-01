@@ -271,11 +271,12 @@ export class QueuesService {
       );
 
       await session.commitTransaction();
-      session.endSession();
 
-      if (queue) {
-        this.queueGateway.notifyQueueUpdate(queue.shop_id);
-      }
+      // Always notify the shop room so the staff UI refreshes and receives
+      // the notification bell update, regardless of whether a queue record
+      // existed for the freed table.
+      this.queueGateway.notifyQueueUpdate(shop_id);
+
       return {
         updatedQueue: nextQueue,
       };
