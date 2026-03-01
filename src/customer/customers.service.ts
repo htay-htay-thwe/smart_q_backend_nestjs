@@ -175,12 +175,10 @@ export class CustomersService {
     phoneNumber: string,
     oldPassword: string,
     newPassword: string,
-    otp: string,
   ) {
-    const isOtpValid = await this.otpService.verifyPhoneOtp(phoneNumber, otp);
-
+    const isOtpValid = await this.otpService.isPhoneVerified(phoneNumber);
     if (!isOtpValid) {
-      throw new UnauthorizedException('Invalid OTP.');
+      throw new UnauthorizedException('Phone number not verified with OTP.');
     }
 
     const customer = await this.customersModel
@@ -212,35 +210,27 @@ export class CustomersService {
     return { message: 'Password changed successfully.' };
   }
 
-  async changePhoneNumber(
-    oldPhoneNumber: string,
-    newPhoneNumber: string,
-    oldOtp: string,
-    newOtp: string,
-  ) {
+  async changePhoneNumber(oldPhoneNumber: string, newPhoneNumber: string) {
     // Verify OTP for old phone number
-
-    const isOldOtpValid = await this.otpService.verifyPhoneOtp(
-      oldPhoneNumber,
-      oldOtp,
-    );
+    const isOldOtpValid = await this.otpService.isPhoneVerified(oldPhoneNumber);
     if (!isOldOtpValid) {
-      throw new UnauthorizedException('Invalid OTP for old phone number.');
+      throw new UnauthorizedException(
+        'Old phone number not verified with OTP.',
+      );
     }
 
-    // Verify OTP for new phone number
-
-    const isNewOtpValid = await this.otpService.verifyPhoneOtp(
-      newPhoneNumber,
-      newOtp,
-    );
+    // verify Otp for new phone number
+    const isNewOtpValid = await this.otpService.isPhoneVerified(newPhoneNumber);
     if (!isNewOtpValid) {
-      throw new UnauthorizedException('Invalid OTP for new phone number.');
+      throw new UnauthorizedException(
+        'New phone number not verified with OTP.',
+      );
     }
 
     const customer = await this.customersModel.findOne({
       phoneNumber: oldPhoneNumber,
     });
+
     if (!customer) {
       throw new NotFoundException('Customer not found.');
     }
@@ -262,35 +252,21 @@ export class CustomersService {
     };
   }
 
-  async changeEmail(
-    oldEmail: string,
-    newEmail: string,
-    oldOtp: string,
-    newOtp: string,
-  ) {
+  async changeEmail(oldEmail: string, newEmail: string) {
     // Verify OTP for old email
-
-    const isOldOtpValid = await this.otpService.verifyEmailOtp(
-      oldEmail,
-      oldOtp,
-    );
+    const isOldOtpValid = await this.otpService.isEmailVerified(oldEmail);
     if (!isOldOtpValid) {
-      throw new UnauthorizedException('Invalid OTP for old email.');
+      throw new UnauthorizedException('Old email not verified with OTP.');
     }
 
-    // Verify OTP for new email
-
-    const isNewOtpValid = await this.otpService.verifyEmailOtp(
-      newEmail,
-      newOtp,
-    );
+    // verify Otp for new email
+    const isNewOtpValid = await this.otpService.isEmailVerified(newEmail);
     if (!isNewOtpValid) {
-      throw new UnauthorizedException('Invalid OTP for new email.');
+      throw new UnauthorizedException('New email not verified with OTP.');
     }
 
-    const customer = await this.customersModel.findOne({
-      email: oldEmail,
-    });
+    const customer = await this.customersModel.findOne({ email: oldEmail });
+
     if (!customer) {
       throw new NotFoundException('Customer not found.');
     }
@@ -339,5 +315,17 @@ export class CustomersService {
       data: customerData,
       message: 'Customer Username changed successfully.',
     };
+  }
+
+  async saveFcmToken(customer_id: string, fcmToken: string) {
+    const customer = await this.customersModel.findByIdAndUpdate(
+      customer_id,
+      { fcmToken },
+      { new: true },
+    );
+    if (!customer) {
+      throw new NotFoundException('Customer not found.');
+    }
+    return { message: 'FCM token saved successfully.' };
   }
 }

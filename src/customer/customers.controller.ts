@@ -130,7 +130,6 @@ export class CustomersController {
       changePasswordData.phoneNumber,
       changePasswordData.oldPassword,
       changePasswordData.newPassword,
-      changePasswordData.otp,
     );
     return { data: result };
   }
@@ -141,8 +140,6 @@ export class CustomersController {
     const result = await this.customersService.changePhoneNumber(
       changePhoneNumberData.oldPhoneNumber,
       changePhoneNumberData.newPhoneNumber,
-      changePhoneNumberData.oldOtp,
-      changePhoneNumberData.newOtp,
     );
     return { data: result };
   }
@@ -153,8 +150,6 @@ export class CustomersController {
     const result = await this.customersService.changeEmail(
       changeEmailData.oldEmail,
       changeEmailData.newEmail,
-      changeEmailData.oldOtp,
-      changeEmailData.newOtp,
     );
     return { data: result };
   }
@@ -188,5 +183,11 @@ export class CustomersController {
       data: customerData,
       message: 'Customer Image changed successfully.',
     };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('fcm-token')
+  async saveFcmToken(@Body() body: { customer_id: string; fcmToken: string }) {
+    return this.customersService.saveFcmToken(body.customer_id, body.fcmToken);
   }
 }

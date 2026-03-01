@@ -12,14 +12,12 @@ import {
 } from '../schemas/QueueHistory.schema';
 import { Customers, CustomersSchema } from '../schemas/Customers.schema';
 import { AuthModule } from '../auth/auth.module';
-import { EmailModule } from '../email/email.module';
 import { QueueGateway } from './queue.gateway';
 import { QueueNotificationService } from './queue-notification.service';
 
 @Module({
   imports: [
     AuthModule,
-    EmailModule,
     MongooseModule.forFeature([
       { name: Queues.name, schema: QueueSchema },
       { name: TableStatus.name, schema: TableStatusSchema },

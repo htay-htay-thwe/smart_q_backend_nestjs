@@ -19,6 +19,10 @@ export class Customers {
 
   @Prop({ default: false })
   isVerified: boolean;
+
+  @Prop({ required: false })
+  fcmToken?: string;
+
   _id: any;
 }
 

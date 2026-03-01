@@ -26,14 +26,6 @@ export class ChangePhoneNumberDto {
   @IsString()
   @IsNotEmpty()
   newPhoneNumber: string;
-
-  @IsString()
-  @IsNotEmpty()
-  oldOtp: string;
-
-  @IsString()
-  @IsNotEmpty()
-  newOtp: string;
 }
 
 export class ChangeEmailDto {
@@ -44,12 +36,4 @@ export class ChangeEmailDto {
   @IsEmail()
   @IsNotEmpty()
   newEmail: string;
-
-  @IsString()
-  @IsNotEmpty()
-  oldOtp: string;
-
-  @IsString()
-  @IsNotEmpty()
-  newOtp: string;
 }

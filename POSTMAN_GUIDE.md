@@ -11,82 +11,87 @@
 After **login** or **register**, copy the `token` from the response body.
 
 For protected routes, add to the request:
-- **Authorization** tab  Type: **Bearer Token**  paste token
+- **Authorization** tab → Type: **Bearer Token** → paste token
 
 Or via cookie: if "Send cookies" is enabled in Postman, `auth_token` is sent automatically.
 
 ---
 
-## Protected vs Public Routes
+## All Endpoints Overview
 
 ### Customer Endpoints (`/api/customers`)
 
 | Method | Endpoint               | Auth | Body Type |
 |--------|------------------------|:----:|-----------|
-| POST   | `/send-phone-otp`      |    | JSON |
-| POST   | `/verify-phone-otp`    |    | JSON |
-| POST   | `/send-email-otp`      |    | JSON |
-| POST   | `/verify-email-otp`    |    | JSON |
-| POST   | `/register`            |    | form-data |
-| POST   | `/login`               |    | JSON |
-| PATCH  | `/change-password`     |    | JSON |
-| PATCH  | `/change-phone-number` |    | JSON |
-| PATCH  | `/change-email`        |    | JSON |
-| PATCH  | `/change-username`     |    | JSON |
-| PATCH  | `/change-profileImage` |    | form-data |
+| POST   | `/send-phone-otp`      |      | JSON |
+| POST   | `/verify-phone-otp`    |      | JSON |
+| POST   | `/send-email-otp`      |      | JSON |
+| POST   | `/verify-email-otp`    |      | JSON |
+| POST   | `/register`            |      | form-data |
+| POST   | `/login`               |      | JSON |
+| PATCH  | `/change-password`     | ✅   | JSON |
+| PATCH  | `/change-phone-number` | ✅   | JSON |
+| PATCH  | `/change-email`        | ✅   | JSON |
+| PATCH  | `/change-username`     | ✅   | JSON |
+| PATCH  | `/change-profileImage` | ✅   | form-data |
+| PATCH  | `/fcm-token`           | ✅   | JSON |
 
 ### Shop Endpoints (`/api/shops`)
 
-| Method | Endpoint               | Auth | Body Type |
-|--------|------------------------|:----:|-----------|
-| POST   | `/send-email-otp`      |    | JSON |
-| POST   | `/verify-email-otp`    |    | JSON |
-| POST   | `/send-phone-otp`      |    | JSON |
-| POST   | `/verify-phone-otp`    |    | JSON |
-| POST   | `/register`            |    | form-data |
-| POST   | `/login`               |    | JSON |
-| GET    | `/`                    |    |  |
-| PATCH  | `/change-password`     |    | JSON |
-| PATCH  | `/change-email`        |    | JSON |
-| PATCH  | `/change-phone-number` |    | JSON |
-| PATCH  | `/change-address`      |    | JSON |
-| PATCH  | `/change-shopName`     |    | JSON |
-| PATCH  | `/change-profileImage` |    | form-data |
+| Method | Endpoint                         | Auth | Body Type |
+|--------|----------------------------------|:----:|-----------|
+| POST   | `/send-email-otp`                |      | JSON |
+| POST   | `/verify-email-otp`              |      | JSON |
+| POST   | `/send-phone-otp`                |      | JSON |
+| POST   | `/verify-phone-otp`              |      | JSON |
+| POST   | `/register`                      |      | form-data |
+| POST   | `/login`                         |      | JSON |
+| GET    | `/all`                           | ✅   | — |
+| PATCH  | `/change-password`               | ✅   | JSON |
+| PATCH  | `/change-email`                  | ✅   | JSON |
+| PATCH  | `/change-phone-number`           | ✅   | JSON |
+| PATCH  | `/change-address`                |      | JSON |
+| PATCH  | `/change-shopName`               |      | JSON |
+| PATCH  | `/change-profileImage`           |      | form-data |
+| PATCH  | `/change-shop-information`       |      | JSON |
+| GET    | `/most-queue-users/:id`          |      | — |
+| GET    | `/finished-queues-per-month/:id` |      | — |
 
-### Queue Endpoints (`/api/queues`)  ALL require auth 
+### Queue Endpoints (`/api/queues`) — ALL require auth
 
-| Method | Endpoint                    | Description |
-|--------|-----------------------------|-------------|
-| POST   | `/create`                   | Join queue |
-| GET    | `/all`                      | Get all queues |
-| GET    | `/shop/:shopId`             | Get queues by shop |
-| GET    | `/customer/:customerId`     | Get queues by customer |
-| GET    | `/check-nearby/:shopId`     | Check customers to notify |
-| GET    | `/get-table-status/:shopId` | Get table status |
-| GET    | `/:id`                      | Get queue by ID |
-| PATCH  | `/generate-qr`              | Generate QR code |
-| PATCH  | `/assign-table`             | Assign table to customer |
-| PATCH  | `/free-table`               | Free a table and update next customer |
-### Free Table (Admin)
-**`PATCH http://localhost:3000/api/queues/free-table`**
-Body: raw JSON
-```json
-{
-  "shop_id": "65fabc123def456789012345",
-  "table_no": "A-05",
-  "table_type_id": "65f789def012345abc678901"
-}
-```
-**Description:** Frees the specified table and updates the next waiting customer to "Ready to seat" for that table type.
+| Method | Endpoint                        | Description |
+|--------|---------------------------------|-------------|
+| POST   | `/create`                       | Customer joins queue |
+| GET    | `/all`                          | Get all queues |
+| GET    | `/shop/:shopId`                 | Get queues by shop |
+| GET    | `/customer/:customerId`         | Get queues by customer |
+| GET    | `/get-table-status/:shopId`     | Get active table statuses |
+| GET    | `/getQueue-history/:shopId`     | Get completed queue history |
+| GET    | `/:id`                          | Get queue by ID |
+| PATCH  | `/generate-qr`                  | Generate QR code for customer |
+| PATCH  | `/assign-table`                 | Assign table after QR scan |
+| PATCH  | `/free-table`                   | Free table and promote next customer |
 
+### Shop Types Endpoints (`/api/shop-types`) — No auth
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST   | `/`      | Create a shop type |
+| GET    | `/`      | Get all shop types |
+
+### Table Types Endpoints (`/api/table-types`) — No auth
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST   | `/`      | Create a table type |
+| GET    | `/`      | Get all table types |
 
 ---
 
 ## Shop Registration Flow
 
 ### Step 1: Create Shop Type
-**`POST http://localhost:3000/shop-types`**  Body: raw JSON
-
+**`POST http://localhost:3000/api/shop-types`**  Body: raw JSON
 ```json
 { "shopTypeName": "Restaurant" }
 ```
@@ -144,9 +149,9 @@ Body  **form-data**:
 | `password` | Text | `SecurePassword123!` |
 | `description` | Text | `Authentic Chinese cuisine` |
 | `shopTypeId` | Text | `<_id from Step 1>` |
-| `tableTypes` | Text | `[{"type":"2-Seater","capacity":2},{"type":"4-Seater","capacity":4},{"type":"6-Seater","capacity":6},{"type":"VIP Room","capacity":10}]` |
+| `tableTypes` | Text | `[{"type":"2-Seater","capacity":2},{"type":"4-Seater","capacity":4},{"type":"6-Seater","capacity":6}]` |
 
-> `tableTypes` must be a JSON string. Do NOT set `Content-Type` manually.
+> `tableTypes` must be a JSON string in a Text field. Do NOT set `Content-Type` manually.
 
 **Response:** Returns `shop` object + `token`. **Save the token.**
 
@@ -163,9 +168,93 @@ Body  **form-data**:
 
 ---
 
-### Step 6: Get All Shops (requires token)
-**`GET http://localhost:3000/api/shops`**  
+### Step 6: Get All Shops
+**`GET http://localhost:3000/api/shops/all`**  
 Authorization: Bearer `<token>`
+
+---
+
+## Shop Account Management
+
+### Change Password (requires token)
+**`PATCH http://localhost:3000/api/shops/change-password`**
+```json
+{
+  "email": "goldendragorn@restaurant.com",
+  "oldPassword": "SecurePassword123!",
+  "newPassword": "NewPassword456!",
+  "phoneNumber": "959123456789",
+  "otp": "123456"
+}
+```
+
+### Change Email (requires token)
+**`PATCH http://localhost:3000/api/shops/change-email`**
+```json
+{
+  "oldEmail": "goldendragorn@restaurant.com",
+  "newEmail": "newemail@restaurant.com"
+}
+```
+
+### Change Phone Number (requires token)
+**`PATCH http://localhost:3000/api/shops/change-phone-number`**
+```json
+{
+  "oldPhoneNumber": "959123456789",
+  "newPhoneNumber": "959987654321"
+}
+```
+
+### Change Address
+**`PATCH http://localhost:3000/api/shops/change-address`**
+```json
+{
+  "shop_id": "65fabc123...",
+  "fullAddress": "456 New Street, Yangon",
+  "lat": 16.85,
+  "lng": 96.20
+}
+```
+
+### Change Shop Name
+**`PATCH http://localhost:3000/api/shops/change-shopName`**
+```json
+{
+  "shop_id": "65fabc123...",
+  "shopTitle": "New Shop Title"
+}
+```
+
+### Change Shop Information
+**`PATCH http://localhost:3000/api/shops/change-shop-information`**
+```json
+{
+  "shop_id": "65fabc123...",
+  "name": "Updated Name",
+  "description": "Updated description",
+  "fullAddress": "New Address",
+  "lat": 16.85,
+  "lng": 96.20
+}
+```
+
+### Change Profile Image
+**`PATCH http://localhost:3000/api/shops/change-profileImage`**  
+Body  **form-data**:
+
+| Key | Type | Value |
+|-----|------|-------|
+| `shop_id` | Text | `65fabc123...` |
+| `image` | **File** | *(select image)* |
+
+### Get Most Queue Users (Report)
+**`GET http://localhost:3000/api/shops/most-queue-users/:id`**  
+Returns customers who have queued the most at this shop.
+
+### Get Finished Queues Per Month (Report)
+**`GET http://localhost:3000/api/shops/finished-queues-per-month/:id`**  
+Returns monthly completed queue counts for chart/report.
 
 ---
 
@@ -214,58 +303,56 @@ Body  **form-data**:
 ### Step 4: Customer Login
 **`POST http://localhost:3000/api/customers/login`**  Body: raw JSON
 
-**Phone login:**
-```json
-{
-  "phoneNumber": 9455555555,
-  "otp": "123456",
-  "password": "SecurePassword123!"
-}
-```
 **Email login:**
 ```json
 {
   "email": "htaythwe@gmail.com",
-  "otp": "123456",
   "password": "SecurePassword123!"
 }
 ```
-> Customer login requires OTP + password (2-factor). Send OTP first using `/send-phone-otp` or `/send-email-otp`.
+**Phone login:**
+```json
+{
+  "phoneNumber": 9455555555,
+  "password": "SecurePassword123!"
+}
+```
 
 ---
 
 ## Customer Account Management (all require Bearer token)
 
 ### Change Password
+> First verify phone OTP: `send-phone-otp`  `verify-phone-otp` using the account phone number
+
 **`PATCH http://localhost:3000/api/customers/change-password`**
 ```json
 {
   "phoneNumber": 9455555555,
   "oldPassword": "SecurePassword123!",
   "newPassword": "NewPassword456!",
-  "otp": "123456"
 }
 ```
 
 ### Change Phone Number
+> First verify OTP for **both** old and new numbers via `send-phone-otp`  `verify-phone-otp` for each
+
 **`PATCH http://localhost:3000/api/customers/change-phone-number`**
 ```json
 {
   "oldPhoneNumber": 9455555555,
-  "newPhoneNumber": 9466666666,
-  "oldOtp": "123456",
-  "newOtp": "654321"
+  "newPhoneNumber": 9466666666
 }
 ```
 
 ### Change Email
+> First verify OTP for **both** old and new emails via `send-email-otp`  `verify-email-otp` for each
+
 **`PATCH http://localhost:3000/api/customers/change-email`**
 ```json
 {
   "oldEmail": "htaythwe@gmail.com",
-  "newEmail": "newemail@gmail.com",
-  "oldOtp": "123456",
-  "newOtp": "654321"
+  "newEmail": "newemail@gmail.com"
 }
 ```
 
@@ -287,72 +374,16 @@ Body  **form-data**:
 | `customer_id` | Text | `65fabc123...` |
 | `image` | **File** | *(select image)* |
 
----
-
-## Shop Account Management
-
-### Change Password (requires token)
-**`PATCH http://localhost:3000/api/shops/change-password`**
+### Save FCM Token (Mobile Push Notifications)
+**`PATCH http://localhost:3000/api/customers/fcm-token`**  
+Authorization: Bearer `<token>`
 ```json
 {
-  "email": "goldendragorn@restaurant.com",
-  "oldPassword": "SecurePassword123!",
-  "newPassword": "NewPassword456!",
-  "phoneNumber": 959123456789,
-  "otp": "123456"
+  "customer_id": "65fabc123...",
+  "fcmToken": "dK3f8gX..."
 }
 ```
-
-### Change Email (requires token)
-**`PATCH http://localhost:3000/api/shops/change-email`**
-```json
-{
-  "oldEmail": "goldendragorn@restaurant.com",
-  "newEmail": "newemail@restaurant.com",
-  "oldOtp": "123456",
-  "newOtp": "654321"
-}
-```
-
-### Change Phone Number (requires token)
-**`PATCH http://localhost:3000/api/shops/change-phone-number`**
-```json
-{
-  "oldPhoneNumber": 959123456789,
-  "newPhoneNumber": 959987654321,
-  "oldOtp": "123456",
-  "newOtp": "654321"
-}
-```
-
-### Change Address
-**`PATCH http://localhost:3000/api/shops/change-address`**
-```json
-{
-  "shop_id": "65fabc123...",
-  "fullAddress": "456 New Street, Yangon",
-  "lat": 16.85,
-  "lng": 96.20
-}
-```
-
-### Change Shop Name/Title
-**`PATCH http://localhost:3000/api/shops/change-shopName`**
-```json
-{
-  "shop_id": "65fabc123...",
-  "shopTitle": "New Shop Title"
-}
-```
-
-### Change Profile Image
-**`PATCH http://localhost:3000/api/shops/change-profileImage`**  
-Body  **form-data**:
-
-| Key | Type | Value |
-|-----|------|-------|
-| `shop_id` | Text | `65fabc123...` |
-| `image` | **File** | *(select image)* |
+> Call once after customer login from the mobile app. Token obtained via `Notifications.getDevicePushTokenAsync()` from `expo-notifications`. Once saved, the backend automatically sends FCM push notifications at ≤20 min, ≤10 min, and ≤5 min remaining wait time.
 
 ---
 
@@ -360,11 +391,14 @@ Body  **form-data**:
 
 ### Queue Workflow
 ```
-1. POST   /api/queues/create                Customer joins queue
-2. GET    /api/queues/check-nearby/:shopId  Admin checks who to notify
-3. PATCH  /api/queues/generate-qr           Admin generates QR
-4. PATCH  /api/queues/assign-table          Admin assigns table after QR scan
+1. POST   /api/queues/create           Customer joins queue
+                                        ↓ backend cron auto-notifies at ≤20min / ≤10min / ≤5min via FCM
+2. PATCH  /api/queues/generate-qr      Admin generates QR when customer's turn arrives
+3. PATCH  /api/queues/assign-table     Admin assigns table after QR scan
+4. PATCH  /api/queues/free-table       Admin frees table when customer leaves → next customer promoted
 ```
+
+---
 
 ### Create Queue
 **`POST http://localhost:3000/api/queues/create`**  Body: raw JSON
@@ -376,24 +410,47 @@ Body  **form-data**:
   "userRequirements": "Window seat preferred"
 }
 ```
+> If a table is available → status: `Ready to seat`, estimated_wait_time: `0`  
+> If no tables available → status: `waiting`, estimated_wait_time calculated automatically
 
-### Check Nearby Queues (Admin)
-**`GET http://localhost:3000/api/queues/check-nearby/:shopId`**
+---
 
 ### Generate QR Code (Admin)
 **`PATCH http://localhost:3000/api/queues/generate-qr`**
 ```json
-{ "queue_id": "65fabc789def012345678901" }
+{
+  "queue_id": "65fabc789def012345678901",
+  "queue_qr": "QR_DATA_STRING_HERE"
+}
 ```
+
+---
 
 ### Assign Table (Admin)
 **`PATCH http://localhost:3000/api/queues/assign-table`**
 ```json
 {
   "queue_id": "65fabc789def012345678901",
-  "table_no": "A-05"
+  "table_no": "A-05",
+  "table_type_id": "65f789def012345abc678901",
+  "shop_id": "65fabc123def456789012345"
 }
 ```
+
+---
+
+### Free Table (Admin)
+**`PATCH http://localhost:3000/api/queues/free-table`**
+```json
+{
+  "shop_id": "65fabc123def456789012345",
+  "table_no": "A-05",
+  "table_type_id": "65f789def012345abc678901"
+}
+```
+> Frees the table, marks queue as `finished`, saves to history, and promotes the next `waiting` customer to `Ready to seat`.
+
+---
 
 ### Get Queues by Shop
 **`GET http://localhost:3000/api/queues/shop/:shopId`**
@@ -402,7 +459,12 @@ Body  **form-data**:
 **`GET http://localhost:3000/api/queues/customer/:customerId`**
 
 ### Get Table Status
-**`GET http://localhost:3000/api/queues/get-table-status/:shopId`**
+**`GET http://localhost:3000/api/queues/get-table-status/:shopId`**  
+Returns all currently active (occupied) tables for the shop.
+
+### Get Queue History
+**`GET http://localhost:3000/api/queues/getQueue-history/:shopId`**  
+Returns all completed queues sorted by `completedAt` descending.
 
 ### Get All Queues
 **`GET http://localhost:3000/api/queues/all`**
@@ -416,12 +478,25 @@ Body  **form-data**:
 
 | Status | Meaning |
 |--------|---------|
-| `Ready to seat` | Table available, can be seated immediately |
-| `waiting` | No tables available, in queue |
-| `ready` | Turn arrived, QR generated |
-| `seated` | Table assigned |
-| `completed` | Visit finished |
-| `cancelled` | Queue cancelled |
+| `Ready to seat` | Table available, customer can be seated immediately |
+| `waiting` | No tables available, customer is in queue |
+| `qr-scanned` | QR code generated, waiting for table assignment |
+| `seated` | Table assigned, customer is seated |
+| `finished` | Visit finished, moved to history |
+
+---
+
+## Push Notification Thresholds (Auto — no API call needed)
+
+The backend cron runs **every minute** and auto-notifies waiting customers via FCM:
+
+| Remaining Wait Time | Notification Title | Fires |
+|---------------------|-------------------|-------|
+| ≤ 20 min | ⏳ ~20 minutes remaining | Once |
+| ≤ 10 min | ⏰ ~10 minutes remaining | Once |
+| ≤ 5 min  | 🚨 Your table is almost ready! | Once |
+
+> Requires `fcmToken` saved via `PATCH /api/customers/fcm-token` and Firebase env vars configured.
 
 ---
 
@@ -431,8 +506,8 @@ Body  **form-data**:
 |-------|--------|-----|
 | `401 - No token provided` | Missing Bearer token | Add `Authorization: Bearer <token>` header |
 | `401 - Invalid or expired token` | Token expired | Login again to get a new token |
-| `400 - Phone number not verified` | OTP step skipped | Call `send-phone-otp`  `verify-phone-otp` first |
-| `400 - Email not verified` | OTP step skipped | Call `send-email-otp`  `verify-email-otp` first |
+| `400 - Phone number not verified` | OTP step skipped | Call `send-phone-otp` → `verify-phone-otp` first |
+| `400 - Email not verified` | OTP step skipped | Call `send-email-otp` → `verify-email-otp` first |
 | `409 - Email already exists` | Duplicate email | Use different email or login |
 | `409 - Phone number already exists` | Duplicate phone | Use different phone or login |
 | `400 - Invalid or expired OTP` | OTP wrong or >5 min old | Request a new OTP |

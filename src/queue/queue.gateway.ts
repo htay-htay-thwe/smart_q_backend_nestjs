@@ -78,15 +78,15 @@ export class QueueGateway {
     });
   }
 
-  // Push a wait-time alert to a specific customer's socket room
-  notifyCustomer(
-    customerId: string,
-    payload: {
-      title: string;
-      message: string;
-      remaining_minutes: number;
-    },
-  ) {
-    this.server.to(`customer:${customerId}`).emit('queueAlert', payload);
-  }
+  // Push a wait-time alert to a specific customer's socket room if use socket.io, can send to specific customer room like this:
+  // notifyCustomer(
+  //   customerId: string,
+  //   payload: {
+  //     title: string;
+  //     message: string;
+  //     remaining_minutes: number;
+  //   },
+  // ) {
+  //   this.server.to(`customer:${customerId}`).emit('queueAlert', payload);
+  // }
 }

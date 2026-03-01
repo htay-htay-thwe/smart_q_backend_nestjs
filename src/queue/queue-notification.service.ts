@@ -6,7 +6,7 @@ import { Queues } from '../schemas/Queues.schema';
 import { Customers } from '../schemas/Customers.schema';
 import { Shops } from '../schemas/Shops.schema';
 import { QueueGateway } from './queue.gateway';
-import { EmailService } from '../email/email.service';
+import { FirebaseService } from '../firebase/firebase.service';
 
 @Injectable()
 export class QueueNotificationService {
@@ -17,7 +17,7 @@ export class QueueNotificationService {
     @InjectModel(Customers.name) private customersModel: Model<Customers>,
     @InjectModel(Shops.name) private shopsModel: Model<Shops>,
     private queueGateway: QueueGateway,
-    private emailService: EmailService,
+    private firebaseService: FirebaseService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -44,11 +44,17 @@ export class QueueNotificationService {
       // When a lower threshold fires, mark ALL higher ones as sent too
       // so the next cron tick doesn't re-fire them.
       let threshold: 20 | 10 | 5 | null = null;
-      let updateFlags: Partial<Record<'notified_20min' | 'notified_10min' | 'notified_5min', boolean>> = {};
+      let updateFlags: Partial<
+        Record<'notified_20min' | 'notified_10min' | 'notified_5min', boolean>
+      > = {};
 
       if (remaining <= 5 && !queue.notified_5min) {
         threshold = 5;
-        updateFlags = { notified_5min: true, notified_10min: true, notified_20min: true };
+        updateFlags = {
+          notified_5min: true,
+          notified_10min: true,
+          notified_20min: true,
+        };
       } else if (remaining <= 10 && !queue.notified_10min) {
         threshold = 10;
         updateFlags = { notified_10min: true, notified_20min: true };
@@ -72,7 +78,10 @@ export class QueueNotificationService {
     remaining: number,
   ) {
     const [customer, shop] = await Promise.all([
-      this.customersModel.findById(queue.customer_id).select('name email').lean(),
+      this.customersModel
+        .findById(queue.customer_id)
+        .select('name email fcmToken')
+        .lean(),
       this.shopsModel.findById(queue.shop_id).select('name').lean(),
     ]);
 
@@ -96,21 +105,20 @@ export class QueueNotificationService {
       `Notifying customer ${customer._id} — threshold: ${threshold}min — queue #${queue.queue_number}`,
     );
 
-    // 1. Socket.io push (if customer app is connected)
-    this.queueGateway.notifyCustomer(queue.customer_id.toString(), {
-      title,
-      message,
-      remaining_minutes: remaining,
-    });
+    // 1. Socket.io push (if customer app is connected) if use socket.io, can send to specific customer room like this:
+    // this.queueGateway.notifyCustomer(queue.customer_id.toString(), {
+    //   title,
+    //   message,
+    //   remaining_minutes: remaining,
+    // });
 
-    // 2. Email notification
-    if (customer.email) {
-      await this.emailService.sendQueueAlert(
-        customer.email,
-        customer.name,
-        queue.queue_number,
-        shop.name,
-        remaining,
+    // 2. FCM push (works even when app is closed/background)
+    if ((customer as any).fcmToken) {
+      await this.firebaseService.sendPushNotification(
+        (customer as any).fcmToken,
+        title,
+        message,
+        { remaining_minutes: String(remaining) },
       );
     }
   }

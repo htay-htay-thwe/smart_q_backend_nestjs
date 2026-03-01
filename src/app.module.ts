@@ -8,6 +8,7 @@ import { CustomersModule } from './customer/customers.module';
 import { AuthModule } from './auth/auth.module';
 import { QueuesModule } from './queue/queues.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    FirebaseModule,
     ShopsModule,
     ShopTypesModule,
     TableTypesModule,
