@@ -1,148 +1,440 @@
-# Smart Q Backend (NestJS)
+# Smart Queue Backend API (NestJS)
 
-## Executive Summary
-Smart Q Backend is a production-oriented backend API for digital queue and table-flow management in service businesses (for example restaurants, clinics, and customer service centers). The platform helps businesses reduce waiting-time confusion, improve customer communication, and increase service throughput through real-time queue updates, OTP-based onboarding, and notification automation.
+A production-ready RESTful backend and WebSocket server powering the Smart Queue system — a digital queue and table-flow management platform for restaurants, clinics, and any service business. Built to eliminate manual queue handling by automating customer flow, real-time table tracking, OTP-verified onboarding, and time-sensitive push notification delivery.
 
-This project is built with NestJS, TypeScript, and MongoDB, and is structured in modular domains (shops, customers, queue, auth, OTP, notifications, and media).
+## Table of Contents
 
-## Problem It Solves
-Traditional waiting systems often create:
-- Unclear wait times for customers
-- High no-show rates when customers are not notified on time
-- Manual table or slot assignment overhead for staff
-- Limited operational insights for business owners
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [System Architecture](#system-architecture)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Available Scripts](#available-scripts)
+- [API Modules & Endpoints](#api-modules--endpoints)
+- [Real-Time System](#real-time-system)
+- [Notification Engine](#notification-engine)
+- [Authentication Flow](#authentication-flow)
+- [Database Collections](#database-collections)
+- [Deployment](#deployment)
 
-Smart Q addresses these with:
-- Queue creation and automatic wait-time estimation
-- Real-time queue events via WebSocket
-- Time-threshold push notifications (20/10/5 minutes)
-- Queue history and monthly analytics for performance tracking
+---
 
-## Core Business Features
+## Overview
 
-### Shop Partner Management
-- Shop registration and login
-- OTP verification for email and phone during onboarding and profile updates
-- Shop profile management (name, address, image, business details)
-- Dynamic table-type setup and capacity updates
+Smart Queue Backend serves as the single source of truth for all queue operations, table states, user accounts, and business analytics. It is consumed by two clients:
 
-### Customer Management
-- Customer registration and login (email or phone)
-- OTP verification workflows
-- Profile updates (name, email, phone, image)
-- FCM token registration for mobile push notifications
+- **Staff Web App** — a Next.js dashboard used by shop staff to manage queues and tables
+- **Customer Mobile App** — used by customers to join queues and receive wait-time alerts
 
-### Queue Operations
-- Create queue entries by shop and table type
-- Auto-detect immediate seating vs waiting state
-- Queue number generation and estimated wait-time calculation
-- QR status transition and table assignment
-- Free-table flow with automatic promotion of next waiting customer
-- Queue history tracking for completed service records
+The backend exposes REST endpoints for all CRUD operations and a Socket.IO gateway for real-time events, backed by a MongoDB database and integrated with Cloudinary, SendGrid, Twilio, and Firebase for media, email, SMS, and push notifications.
 
-### Real-Time & Notification Layer
-- WebSocket channels for queue activity updates
-- Scheduled checks every minute for waiting queues
-- Push notifications at 20/10/5-minute thresholds
-- Firebase Cloud Messaging integration for mobile delivery
+---
 
-### Insights & Reporting
-- Most frequent queue customers per shop
-- Finished queues grouped by month for trend analysis
+## Key Features
 
-## Technical Architecture
+| Feature | Description |
+|---|---|
+| OTP-Verified Onboarding | 6-digit OTP sent via email (SendGrid) or phone (Twilio) with 5-minute expiry for both shop and customer registration |
+| JWT Authentication | Stateless JWT tokens issued on login for both shop partners and customers, validated by a global guard |
+| Queue Lifecycle Management | Full state machine: `waiting` → `Ready to seat` → `qr-scanned` → `seated` → `finished` with auto-promotion on table free |
+| Wait-Time Estimation | Automatically calculates estimated wait time based on table capacity and number of customers ahead |
+| Real-Time WebSocket Events | Socket.IO gateway emits `newCustomerQueue` and `freeTable` events to all connected staff dashboards instantly |
+| Time-Threshold Push Notifications | Cron job fires every minute; sends FCM push at 20, 10, and 5-minute remaining thresholds — each threshold fires once only |
+| Table Status Tracking | Active `TableStatus` records track every occupied table; freed when a customer is marked as finished |
+| MongoDB Transactions | Critical `freeTable` flow uses MongoDB sessions and transactions to guarantee data consistency |
+| Queue History | Completed queues are archived to `QueueHistory` for reporting and analytics |
+| Business Analytics | Aggregation pipelines expose top customers by visit count and monthly finished-queue trends |
+| Image Upload | Profile photos and shop images are uploaded to Cloudinary via stream upload |
+| Profile Management | Both shops and customers can update name, email, phone, address, password, and profile image — all OTP-gated where required |
 
-### Stack
-- Framework: NestJS (TypeScript)
-- Database: MongoDB with Mongoose ODM
-- Authentication: JWT
-- Realtime: Socket.IO WebSocket gateway
-- Scheduling: @nestjs/schedule cron jobs
-- Media Storage: Cloudinary
-- Email: SendGrid integration
-- Push Notifications: Firebase Admin SDK (FCM)
+---
 
-### High-Level Modules
-- auth: JWT token generation and verification
-- shop: partner onboarding, profile, analytics
-- customer: account lifecycle and FCM token storage
-- queue: queue lifecycle, assignment, history, realtime gateway
-- otp: email and phone OTP generation and verification
-- firebase: push notification provider
-- cloudinary: image upload service
-- shop-types / table-types: category and table capacity management
+## Tech Stack
 
-### Key Data Collections
-- Shops
-- Customers
-- Queues
-- QueueHistory
-- TableStatus
-- TableTypes
-- ShopTypes
-- Otp
+### Core
 
-## Security & Reliability Notes
-- Password hashing is implemented with bcrypt
-- JWT-based authentication protects business-critical routes
-- OTP validation is required before sensitive identity changes
-- Queue and table updates use transactional logic in critical flows
-- CORS is enabled for frontend and mobile integration
+| Technology | Version | Purpose |
+|---|---|---|
+| NestJS | ^11.0 | Backend framework with modular architecture |
+| TypeScript | ^5.7 | Static typing across the entire codebase |
+| Node.js | v18+ | Runtime environment |
+| MongoDB | via Mongoose ^9.2 | Primary database with ODM |
 
-## API Domains
-Base style used in controllers: /api/...
+### Auth & Security
 
-- /api/shops: registration, login, profile updates, partner analytics
-- /api/customers: OTP flows, registration/login, profile updates, FCM token
-- /api/queues: queue creation, assignment, table status, queue history
-- /api/shop-types and /api/table-types: setup data for operations
+| Technology | Purpose |
+|---|---|
+| @nestjs/jwt + passport-jwt | JWT generation, signing, and route-level guard validation |
+| bcrypt | Password hashing with salt rounds |
+| cookie-parser | HTTP-only cookie support for token storage |
 
-## Stakeholder Value
+### Real-Time & Scheduling
 
-### For Employers and Clients
-- Demonstrates a complete backend from onboarding to real-time operations
-- Shows practical integration with Cloudinary, SendGrid, and Firebase
-- Uses a scalable modular architecture suitable for product growth
+| Technology | Purpose |
+|---|---|
+| @nestjs/websockets + Socket.IO | WebSocket gateway for live queue and table events |
+| @nestjs/schedule | Cron-based background job for wait-time notification checks |
 
-### For HR and Recruiters
-- Shows backend engineering skills in:
-  - REST API design
-  - Authentication and account security
-  - Database modeling and business logic
-  - Realtime communication
-  - Cron-based workflow automation
-  - Third-party service integration
+### Integrations
 
-### For Professors and Academic Review
-- Clear applied-software design with domain-driven module separation
-- Uses asynchronous workflows, state transitions, and service orchestration
-- Demonstrates practical software engineering trade-offs in a real business scenario
+| Technology | Purpose |
+|---|---|
+| Firebase Admin SDK | FCM push notifications to customer mobile devices |
+| SendGrid | Transactional OTP emails |
+| Twilio | SMS OTP delivery |
+| Cloudinary | Cloud image upload and storage |
 
-## Local Setup
-1. Install dependencies
-   - npm install
-2. Configure environment variables in example.env
-3. Start development server
-   - npm run start:dev
-4. API runs by default on
-   - http://localhost:4000 (or PORT from environment)
+### Validation & Utilities
 
-## Scripts
-- npm run start
-- npm run start:dev
-- npm run start:prod
-- npm run build
-- npm run lint
-- npm run test
-- npm run test:e2e
-- npm run test:cov
+| Technology | Purpose |
+|---|---|
+| class-validator + class-transformer | DTO-level request validation |
+| uuid | Unique identifier generation |
+| multer | Multipart form-data handling for file uploads |
 
-## Professional Roadmap
-- Add Swagger/OpenAPI documentation for all routes
-- Add role-based authorization guards across sensitive endpoints
-- Replace development OTP response behavior with production-safe masked delivery
-- Expand automated testing coverage (unit + integration + e2e)
-- Add centralized logging, monitoring, and rate limiting
+---
 
-## Project Positioning Statement
-Smart Q Backend is a robust, modular backend platform that digitizes waiting-line operations, combines real-time coordination with automated customer communication, and provides measurable operational insights—making it suitable as both a portfolio-grade engineering project and a practical business-ready foundation.
+## System Architecture
+
+```
++-----------------------------------------------------------+
+|              Client Apps                                  |
+|                                                           |
+|  +---------------------+   +-------------------------+   |
+|  | Staff Web (Next.js) |   | Customer Mobile App     |   |
+|  +----------+----------+   +-----------+-------------+   |
+|             |                          |                  |
++-------------|--------------------------|------------------+
+              |                          |
+              |  REST (Axios / Fetch)    |  Socket.IO
+              |                          |
++-------------|--------------------------|------------------+
+|             v                          v                  |
+|  +---------------------+   +-------------------------+   |
+|  |  REST API Layer     |   |  WebSocket Gateway      |   |
+|  |  (Controllers)      |   |  (QueueGateway)         |   |
+|  +----------+----------+   +-----------+-------------+   |
+|             |                          |                  |
+|  +----------+--------------------------+-------------+   |
+|  |           Service & Business Logic Layer          |   |
+|  |  ShopsService | QueuesService | CustomersService  |   |
+|  |  OtpService   | AuthService   | NotificationSvc   |   |
+|  +----------------------+----------------------------+   |
+|                         |                                 |
+|  +-----------+  +-------+-------+  +----------------+   |
+|  | MongoDB   |  | Firebase FCM  |  | Cloudinary /   |   |
+|  | (Mongoose)|  | (Push Notif.) |  | SendGrid/Twilio|   |
+|  +-----------+  +---------------+  +----------------+   |
+|                                                           |
+|                  NestJS Application                       |
++-----------------------------------------------------------+
+```
+
+---
+
+## Project Structure
+
+```
+smart_q_backend_nestjs/
+├── src/
+│   ├── main.ts                        # Bootstrap: CORS, cookie-parser, port
+│   ├── app.module.ts                  # Root module wiring all feature modules
+│   │
+│   ├── auth/                          # JWT strategy, guard, token service
+│   ├── otp/                           # OTP generation, email/phone send & verify
+│   ├── email/                         # SendGrid email service
+│   ├── phone/                         # Twilio SMS service
+│   ├── firebase/                      # Firebase Admin SDK + FCM push sender
+│   ├── cloudinary/                    # Cloudinary image upload service
+│   │
+│   ├── shop/                          # Shop partner domain
+│   │   ├── shops.controller.ts        # /api/shops routes
+│   │   ├── shops.service.ts           # Registration, login, profile, analytics
+│   │   └── dtos/                      # ShopInformation, Login, ChangeShop DTOs
+│   │
+│   ├── customer/                      # Customer domain
+│   │   ├── customers.controller.ts    # /api/customers routes
+│   │   ├── customers.service.ts       # Registration, login, profile, FCM token
+│   │   └── dtos/                      # CustomerInformation, Login, OTP DTOs
+│   │
+│   ├── queue/                         # Queue domain (core business logic)
+│   │   ├── queues.controller.ts       # /api/queues routes
+│   │   ├── queues.service.ts          # Full queue lifecycle & table management
+│   │   ├── queue.gateway.ts           # Socket.IO WebSocket gateway
+│   │   ├── queue-notification.service.ts  # Cron job: FCM push at wait thresholds
+│   │   └── dtos/                      # QueueData, AssignTable, GenerateQr DTOs
+│   │
+│   ├── shop-types/                    # Shop category management
+│   ├── table-types/                   # Table type & capacity management
+│   │
+│   └── schemas/                       # Mongoose schema definitions
+│       ├── Shops.schema.ts
+│       ├── Customers.schema.ts
+│       ├── Queues.schema.ts
+│       ├── QueueHistory.schema.ts
+│       ├── TableStatus.schema.ts
+│       ├── TableTypes.schema.ts
+│       ├── ShopTypes.schema.ts
+│       └── Otp.schema.ts
+│
+├── test/                              # e2e test setup
+├── example.env                        # Environment variable reference
+├── nest-cli.json
+├── tsconfig.json
+└── package.json
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js v18 or higher
+- npm v9+
+- MongoDB instance (local or Atlas)
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd smart_q_backend_nestjs
+
+# 2. Install dependencies
+npm install
+
+# 3. Configure environment variables
+cp example.env .env
+
+# 4. Start the development server
+npm run start:dev
+```
+
+The API will be available at `http://localhost:4000`.
+
+---
+
+## Environment Variables
+
+Create a `.env` file at the project root using `example.env` as reference:
+
+```env
+PORT=4000
+MONGODB_URI=
+NODE_ENV=development
+
+# Cloudinary (image uploads)
+CLOUD_NAME=
+CLOUD_API_KEY=
+CLOUD_API_SECRET=
+
+# SendGrid (email OTP)
+SENDGRID_API_KEY=
+SENDGRID_SENDER_EMAIL=
+
+# Twilio (SMS OTP)
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+
+# JWT
+JWT_SECRET=
+
+# Firebase Admin SDK (FCM push notifications)
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+```
+
+---
+
+## Available Scripts
+
+| Command | Description |
+|---|---|
+| `npm run start:dev` | Start with hot-reload in development mode |
+| `npm run start` | Start from compiled `dist/` |
+| `npm run start:prod` | Production start from `dist/main.js` |
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm run lint` | Lint and auto-fix with ESLint |
+| `npm run test` | Run unit tests with Jest |
+| `npm run test:e2e` | Run end-to-end tests |
+| `npm run test:cov` | Run tests with coverage report |
+
+---
+
+## API Modules & Endpoints
+
+### Shops — `/api/shops`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/register` | Register a new shop partner (OTP-verified) |
+| POST | `/login` | Shop login — returns JWT |
+| GET | `/all` | Retrieve all registered shops |
+| POST | `/send-email-otp` | Send OTP to shop email |
+| POST | `/verify-email-otp` | Verify shop email OTP |
+| POST | `/send-phone-otp` | Send OTP to shop phone |
+| POST | `/verify-phone-otp` | Verify shop phone OTP |
+| PATCH | `/change-password` | Update shop password |
+| PATCH | `/change-email` | Update shop email (OTP-gated) |
+| PATCH | `/change-phone-number` | Update shop phone (OTP-gated) |
+| PATCH | `/change-address` | Update shop address with geo-coordinates |
+| PATCH | `/change-shopName` | Update shop display name |
+| PATCH | `/change-profileImage` | Upload new shop profile image |
+| PATCH | `/change-shop-information` | Update description, shop type, and table types |
+| GET | `/most-queue-users/:id` | Top 5 customers by visit count |
+| GET | `/finished-queues-per-month/:id` | Monthly finished queue counts |
+
+### Customers — `/api/customers`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/send-email-otp` | Send OTP to customer email |
+| POST | `/verify-email-otp` | Verify customer email OTP |
+| POST | `/send-phone-otp` | Send OTP to customer phone |
+| POST | `/verify-phone-otp` | Verify customer phone OTP |
+| POST | `/register` | Register a new customer (OTP-verified) |
+| POST | `/login` | Customer login — returns JWT |
+| PATCH | `/change-password` | Update customer password |
+| PATCH | `/change-phone-number` | Update phone (OTP-gated) |
+| PATCH | `/change-email` | Update email (OTP-gated) |
+| PATCH | `/change-username` | Update display name |
+| PATCH | `/change-profileImage` | Upload new profile image |
+| PATCH | `/fcm-token` | Save FCM device token for push notifications |
+
+### Queues — `/api/queues`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/create` | Create a new queue entry |
+| GET | `/all` | Get all queue entries |
+| GET | `/shop/:shopId` | Get all queues for a shop |
+| GET | `/customer/:customerId` | Get all queues for a customer |
+| GET | `/:id` | Get a single queue by ID |
+| PATCH | `/generate-qr` | Mark queue as QR-scanned, attach QR data |
+| PATCH | `/assign-table` | Assign a table and mark customer as seated |
+| PATCH | `/free-table` | Free a table, mark queue as finished, promote next waiting customer |
+| GET | `/get-table-status/:shopId` | Get all currently occupied tables for a shop |
+| GET | `/getQueue-history/:shopId` | Get completed queue history for a shop |
+
+### Reference Data
+
+| Base Path | Method | Description |
+|---|---|---|
+| `/api/shop-types` | GET / POST | List or create shop categories |
+| `/api/table-types` | GET / POST | List or create table types |
+
+---
+
+## Real-Time System
+
+The `QueueGateway` establishes a persistent Socket.IO server alongside the HTTP server. Staff dashboards and customer apps connect on mount and join a room keyed by `shop_id` or `customer_id`.
+
+| Event | Direction | Trigger | Payload |
+|---|---|---|---|
+| `events` | Client → Server | Staff app connects; joins shop room | `shop_id` |
+| `joinCustomerRoom` | Client → Server | Customer app connects; joins customer room | `customer_id` |
+| `newCustomerQueue` | Server → Client | A new customer joins the waiting queue | `{ table_type_id, table_type_name }` |
+| `freeTable` | Server → Client | A table is freed and queue is updated | `{ table_type_id, table_type_name }` |
+
+React Query's `invalidateQueries` on the frontend re-fetches stale data on each event, keeping all dashboard widgets in sync with zero manual refresh.
+
+---
+
+## Notification Engine
+
+`QueueNotificationService` runs a `@Cron(EVERY_MINUTE)` job that scans all queues in `waiting` status with a positive estimated wait time.
+
+```
+Every 60 seconds
+       │
+       ▼
+Find all waiting queues with estimated_wait_time > 0
+       │
+       ▼
+For each queue — calculate elapsed time since creation
+       │
+       ├── remaining ≤ 5 min  AND notified_5min = false
+       │     └── Send FCM: "Your table is almost ready!"
+       │         Mark notified_5min, notified_10min, notified_20min = true
+       │
+       ├── remaining ≤ 10 min AND notified_10min = false
+       │     └── Send FCM: "~10 minutes remaining"
+       │         Mark notified_10min, notified_20min = true
+       │
+       └── remaining ≤ 20 min AND notified_20min = false
+             └── Send FCM: "~20 minutes remaining"
+                 Mark notified_20min = true
+```
+
+Each threshold fires **exactly once** per queue entry. Flags are written to the database immediately before the notification is sent to prevent duplicate delivery on the next cron tick.
+
+---
+
+## Authentication Flow
+
+```
+1. Send OTP to phone number
+          │
+          ▼
+2. Verify phone OTP (6-digit, 5-minute expiry)
+          │
+          ▼
+3. Send OTP to email address
+          │
+          ▼
+4. Verify email OTP
+          │
+          ▼
+5. Submit registration payload (name, password, business details)
+          │
+          ▼
+6. Server confirms OTP records, hashes password with bcrypt
+          │
+          ▼
+7. Account created → JWT issued → stored in HTTP-only cookie
+```
+
+---
+
+## Database Collections
+
+| Collection | Purpose |
+|---|---|
+| `Shops` | Shop partner accounts, business info, table type references |
+| `Customers` | Customer accounts, FCM tokens, profile images |
+| `Queues` | Active queue entries with status state machine and wait time |
+| `QueueHistory` | Archived records of all completed/finished queues |
+| `TableStatus` | Live record of every currently occupied table per shop |
+| `TableTypes` | Table category definitions (type name, total capacity, shop reference) |
+| `ShopTypes` | Business category labels (restaurant, clinic, etc.) |
+| `Otp` | OTP records with expiry and verification status for email and phone |
+
+---
+
+## Deployment
+
+This project is deployed and running on **Render**.
+
+For manual deployment to any Node.js host:
+
+```bash
+# Build the project
+npm run build
+
+# Start production server
+npm run start:prod
+```
+
+Ensure all environment variables listed in the [Environment Variables](#environment-variables) section are configured on your deployment platform before starting.
+
+---
+
+## License
+
+This project is proprietary software developed for the Smart Queue system.  
+All rights reserved © 2026 Smart Queue.
