@@ -386,4 +386,26 @@ export class QueuesService {
       remaining_minutes,
     });
   }
+
+  /** DEV ONLY — set a queue's estimated_wait_time so remaining ≈ desiredRemaining */
+  async setRemainingTime(queueId: string, desiredRemaining: number): Promise<void> {
+    const queue = await this.queuesModel.findById(queueId).lean();
+    if (!queue) throw new NotFoundException('Queue not found');
+
+    const createdAt = (queue as any).createdAt as Date;
+    const elapsedMinutes = Math.floor(
+      (Date.now() - new Date(createdAt).getTime()) / 60_000,
+    );
+    const newEstimated = elapsedMinutes + desiredRemaining;
+
+    await this.queuesModel.updateOne(
+      { _id: queueId },
+      {
+        estimated_wait_time: newEstimated,
+        notified_20min: false,
+        notified_10min: false,
+        notified_5min: false,
+      },
+    );
+  }
 }

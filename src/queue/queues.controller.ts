@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { QueuesService } from './queues.service';
+import { QueueNotificationService } from './queue-notification.service';
 import { queueData } from './dtos/queueData.dto';
 import { GenerateQrDto } from './dtos/generateQr.dto';
 import { AssignTableDto } from './dtos/assignTable.dto';
@@ -16,7 +17,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 @Controller('api/queues')
 export class QueuesController {
-  constructor(private queuesService: QueuesService) {}
+  constructor(
+    private queuesService: QueuesService,
+    private queueNotificationService: QueueNotificationService,
+  ) {}
 
   @Post('create')
   async createQueue(@Body() queueData: queueData) {
@@ -104,6 +108,23 @@ export class QueuesController {
   async getQueueById(@Param('id') id: string) {
     const queue = await this.queuesService.getQueueById(id);
     return { data: queue };
+  }
+
+  /** DEV ONLY — manually trigger the cron wait-time check immediately */
+  @Post('trigger-cron')
+  async triggerCronNow() {
+    await this.queueNotificationService.checkWaitTimes();
+    return { message: 'Cron check executed' };
+  }
+
+  /** DEV ONLY — set a queue's remaining time to a desired value (resets notification flags) */
+  @Post('set-remaining/:queueId')
+  async setRemainingTime(
+    @Param('queueId') queueId: string,
+    @Body() body: { remaining_minutes: number },
+  ) {
+    await this.queuesService.setRemainingTime(queueId, body.remaining_minutes);
+    return { message: `Queue ${queueId} remaining set to ~${body.remaining_minutes} min` };
   }
 
   /** DEV ONLY — simulate a threshold alert to a specific customer */

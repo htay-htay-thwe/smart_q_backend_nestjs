@@ -37,28 +37,30 @@ export class QueueNotificationService {
       );
       const remaining = queue.estimated_wait_time - elapsedMinutes;
 
-      // Determine which threshold to fire (only once per threshold)
+      // Skip if wait time has already passed
+      if (remaining <= 0) continue;
+
+      // Determine which threshold to fire (only once per threshold).
+      // When a lower threshold fires, mark ALL higher ones as sent too
+      // so the next cron tick doesn't re-fire them.
       let threshold: 20 | 10 | 5 | null = null;
-      let flagField: 'notified_20min' | 'notified_10min' | 'notified_5min' | null = null;
+      let updateFlags: Partial<Record<'notified_20min' | 'notified_10min' | 'notified_5min', boolean>> = {};
 
       if (remaining <= 5 && !queue.notified_5min) {
         threshold = 5;
-        flagField = 'notified_5min';
+        updateFlags = { notified_5min: true, notified_10min: true, notified_20min: true };
       } else if (remaining <= 10 && !queue.notified_10min) {
         threshold = 10;
-        flagField = 'notified_10min';
+        updateFlags = { notified_10min: true, notified_20min: true };
       } else if (remaining <= 20 && !queue.notified_20min) {
         threshold = 20;
-        flagField = 'notified_20min';
+        updateFlags = { notified_20min: true };
       }
 
-      if (!threshold || !flagField) continue;
+      if (!threshold) continue;
 
-      // Mark the flag immediately to prevent duplicate sends
-      await this.queuesModel.updateOne(
-        { _id: queue._id },
-        { [flagField]: true },
-      );
+      // Mark flags immediately to prevent duplicate sends on the next tick
+      await this.queuesModel.updateOne({ _id: queue._id }, updateFlags);
 
       await this.sendThresholdNotification(queue, threshold, remaining);
     }
