@@ -8,7 +8,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { QueuesService } from './queues.service';
-import { QueueNotificationService } from './queue-notification.service';
 import { queueData } from './dtos/queueData.dto';
 import { GenerateQrDto } from './dtos/generateQr.dto';
 import { AssignTableDto } from './dtos/assignTable.dto';
@@ -17,10 +16,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 @Controller('api/queues')
 export class QueuesController {
-  constructor(
-    private queuesService: QueuesService,
-    private queueNotificationService: QueueNotificationService,
-  ) {}
+  constructor(private queuesService: QueuesService) {}
 
   @Post('create')
   async createQueue(@Body() queueData: queueData) {
@@ -47,15 +43,6 @@ export class QueuesController {
   async getQueuesByCustomer(@Param('customerId') customerId: string) {
     const queues = await this.queuesService.getQueuesByCustomer(customerId);
     return { data: queues };
-  }
-
-  @Get('check-nearby/:shopId')
-  async checkNearbyQueues(@Param('shopId') shopId: string) {
-    const nearbyQueues = await this.queuesService.checkNearbyQueues(shopId);
-    return {
-      data: nearbyQueues,
-      message: 'Queues ready for notification',
-    };
   }
 
   @Patch('generate-qr')
@@ -108,43 +95,5 @@ export class QueuesController {
   async getQueueById(@Param('id') id: string) {
     const queue = await this.queuesService.getQueueById(id);
     return { data: queue };
-  }
-
-  /** DEV ONLY — manually trigger the cron wait-time check immediately */
-  @Post('trigger-cron')
-  async triggerCronNow() {
-    await this.queueNotificationService.checkWaitTimes();
-    return { message: 'Cron check executed' };
-  }
-
-  /** DEV ONLY — set a queue's remaining time to a desired value (resets notification flags) */
-  @Post('set-remaining/:queueId')
-  async setRemainingTime(
-    @Param('queueId') queueId: string,
-    @Body() body: { remaining_minutes: number },
-  ) {
-    await this.queuesService.setRemainingTime(queueId, body.remaining_minutes);
-    return { message: `Queue ${queueId} remaining set to ~${body.remaining_minutes} min` };
-  }
-
-  /** DEV ONLY — simulate a threshold alert to a specific customer */
-  @Post('test-customer-notify')
-  async testCustomerNotify(
-    @Body()
-    body: {
-      customer_id: string;
-      queue_number: number;
-      shop_name: string;
-      remaining_minutes: number;
-    },
-  ) {
-    const { customer_id, queue_number, shop_name, remaining_minutes } = body;
-    await this.queuesService.testCustomerNotify(
-      customer_id,
-      queue_number,
-      shop_name,
-      remaining_minutes,
-    );
-    return { message: `Alert sent to customer ${customer_id}` };
   }
 }
