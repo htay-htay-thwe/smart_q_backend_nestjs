@@ -1,98 +1,148 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Smart Q Backend (NestJS)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Executive Summary
+Smart Q Backend is a production-oriented backend API for digital queue and table-flow management in service businesses (for example restaurants, clinics, and customer service centers). The platform helps businesses reduce waiting-time confusion, improve customer communication, and increase service throughput through real-time queue updates, OTP-based onboarding, and notification automation.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This project is built with NestJS, TypeScript, and MongoDB, and is structured in modular domains (shops, customers, queue, auth, OTP, notifications, and media).
 
-## Description
+## Problem It Solves
+Traditional waiting systems often create:
+- Unclear wait times for customers
+- High no-show rates when customers are not notified on time
+- Manual table or slot assignment overhead for staff
+- Limited operational insights for business owners
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Smart Q addresses these with:
+- Queue creation and automatic wait-time estimation
+- Real-time queue events via WebSocket
+- Time-threshold push notifications (20/10/5 minutes)
+- Queue history and monthly analytics for performance tracking
 
-## Project setup
+## Core Business Features
 
-```bash
-$ npm install
-```
+### Shop Partner Management
+- Shop registration and login
+- OTP verification for email and phone during onboarding and profile updates
+- Shop profile management (name, address, image, business details)
+- Dynamic table-type setup and capacity updates
 
-## Compile and run the project
+### Customer Management
+- Customer registration and login (email or phone)
+- OTP verification workflows
+- Profile updates (name, email, phone, image)
+- FCM token registration for mobile push notifications
 
-```bash
-# development
-$ npm run start
+### Queue Operations
+- Create queue entries by shop and table type
+- Auto-detect immediate seating vs waiting state
+- Queue number generation and estimated wait-time calculation
+- QR status transition and table assignment
+- Free-table flow with automatic promotion of next waiting customer
+- Queue history tracking for completed service records
 
-# watch mode
-$ npm run start:dev
+### Real-Time & Notification Layer
+- WebSocket channels for queue activity updates
+- Scheduled checks every minute for waiting queues
+- Push notifications at 20/10/5-minute thresholds
+- Firebase Cloud Messaging integration for mobile delivery
 
-# production mode
-$ npm run start:prod
-```
+### Insights & Reporting
+- Most frequent queue customers per shop
+- Finished queues grouped by month for trend analysis
 
-## Run tests
+## Technical Architecture
 
-```bash
-# unit tests
-$ npm run test
+### Stack
+- Framework: NestJS (TypeScript)
+- Database: MongoDB with Mongoose ODM
+- Authentication: JWT
+- Realtime: Socket.IO WebSocket gateway
+- Scheduling: @nestjs/schedule cron jobs
+- Media Storage: Cloudinary
+- Email: SendGrid integration
+- Push Notifications: Firebase Admin SDK (FCM)
 
-# e2e tests
-$ npm run test:e2e
+### High-Level Modules
+- auth: JWT token generation and verification
+- shop: partner onboarding, profile, analytics
+- customer: account lifecycle and FCM token storage
+- queue: queue lifecycle, assignment, history, realtime gateway
+- otp: email and phone OTP generation and verification
+- firebase: push notification provider
+- cloudinary: image upload service
+- shop-types / table-types: category and table capacity management
 
-# test coverage
-$ npm run test:cov
-```
+### Key Data Collections
+- Shops
+- Customers
+- Queues
+- QueueHistory
+- TableStatus
+- TableTypes
+- ShopTypes
+- Otp
 
-## Deployment
+## Security & Reliability Notes
+- Password hashing is implemented with bcrypt
+- JWT-based authentication protects business-critical routes
+- OTP validation is required before sensitive identity changes
+- Queue and table updates use transactional logic in critical flows
+- CORS is enabled for frontend and mobile integration
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## API Domains
+Base style used in controllers: /api/...
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- /api/shops: registration, login, profile updates, partner analytics
+- /api/customers: OTP flows, registration/login, profile updates, FCM token
+- /api/queues: queue creation, assignment, table status, queue history
+- /api/shop-types and /api/table-types: setup data for operations
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+## Stakeholder Value
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### For Employers and Clients
+- Demonstrates a complete backend from onboarding to real-time operations
+- Shows practical integration with Cloudinary, SendGrid, and Firebase
+- Uses a scalable modular architecture suitable for product growth
 
-## Resources
+### For HR and Recruiters
+- Shows backend engineering skills in:
+  - REST API design
+  - Authentication and account security
+  - Database modeling and business logic
+  - Realtime communication
+  - Cron-based workflow automation
+  - Third-party service integration
 
-Check out a few resources that may come in handy when working with NestJS:
+### For Professors and Academic Review
+- Clear applied-software design with domain-driven module separation
+- Uses asynchronous workflows, state transitions, and service orchestration
+- Demonstrates practical software engineering trade-offs in a real business scenario
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Local Setup
+1. Install dependencies
+   - npm install
+2. Configure environment variables in example.env
+3. Start development server
+   - npm run start:dev
+4. API runs by default on
+   - http://localhost:4000 (or PORT from environment)
 
-## Support
+## Scripts
+- npm run start
+- npm run start:dev
+- npm run start:prod
+- npm run build
+- npm run lint
+- npm run test
+- npm run test:e2e
+- npm run test:cov
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Professional Roadmap
+- Add Swagger/OpenAPI documentation for all routes
+- Add role-based authorization guards across sensitive endpoints
+- Replace development OTP response behavior with production-safe masked delivery
+- Expand automated testing coverage (unit + integration + e2e)
+- Add centralized logging, monitoring, and rate limiting
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Project Positioning Statement
+Smart Q Backend is a robust, modular backend platform that digitizes waiting-line operations, combines real-time coordination with automated customer communication, and provides measurable operational insights—making it suitable as both a portfolio-grade engineering project and a practical business-ready foundation.

@@ -7,14 +7,33 @@ export class FirebaseService implements OnModuleInit {
 
   onModuleInit() {
     if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-      });
-      this.logger.log('Firebase Admin initialized');
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(
+        /\\n/g,
+        '\n',
+      );
+
+      if (!projectId || !clientEmail || !privateKey) {
+        this.logger.warn(
+          'Firebase env vars not set — push notifications disabled. ' +
+            'Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY on Render.',
+        );
+        return;
+      }
+
+      try {
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId,
+            clientEmail,
+            privateKey,
+          }),
+        });
+        this.logger.log('Firebase Admin initialized');
+      } catch (error) {
+        this.logger.error(`Firebase init failed: ${error.message}`);
+      }
     }
   }
 
@@ -24,6 +43,10 @@ export class FirebaseService implements OnModuleInit {
     body: string,
     data?: Record<string, string>,
   ): Promise<void> {
+    if (!admin.apps.length) {
+      this.logger.warn('Firebase not initialized — skipping push notification');
+      return;
+    }
     try {
       await admin.messaging().send({
         token: fcmToken,
