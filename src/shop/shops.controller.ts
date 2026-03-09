@@ -36,6 +36,8 @@ import {
   UpdateShopDto,
 } from './dtos/ChangeShop.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CacheInterceptor } from '@nestjs/cache-manager/dist/interceptors/cache.interceptor';
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator';
 
 @Controller('api/shops')
 export class ShopsController {
@@ -97,7 +99,8 @@ export class ShopsController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   @Get('all')
   async findAll() {
     return { data: await this.shopsService.findAll() };
@@ -224,11 +227,15 @@ export class ShopsController {
   }
 
   @Get('most-queue-users/:id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getMostQueueUsers(@Param('id') shopId: string) {
     return this.shopsService.findMostQueueUsers(shopId);
   }
 
   @Get('finished-queues-per-month/:id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getFinishedQueuesPerMonth(@Param('id') shopId: string) {
     return this.shopsService.getFinishedQueuesPerMonth(shopId);
   }

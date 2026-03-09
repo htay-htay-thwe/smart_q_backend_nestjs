@@ -1,5 +1,7 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
 import { TableTypesService } from './table-types.service';
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator';
+import { CacheInterceptor } from '@nestjs/cache-manager/dist/interceptors/cache.interceptor';
 
 @Controller('api/table-types')
 export class TableTypesController {
@@ -15,6 +17,8 @@ export class TableTypesController {
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(3600)
   async findAll() {
     return await this.tableTypesService.findAll();
   }

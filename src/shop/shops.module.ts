@@ -17,6 +17,9 @@ import { EmailModule } from '../email/email.module';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../phone/phone.service';
 import { PhoneModule } from '../phone/phone.module';
+import { CacheInterceptor } from '@nestjs/cache-manager/dist/interceptors/cache.interceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core/constants';
+import { CacheModule } from '@nestjs/cache-manager/dist/cache.module';
 
 @Module({
   imports: [
@@ -48,6 +51,9 @@ import { PhoneModule } from '../phone/phone.module';
     PhoneModule,
   ],
   controllers: [ShopsController],
-  providers: [ShopsService, OtpService, EmailService, SmsService],
+  providers: [ShopsService, OtpService, EmailService, SmsService,   {
+        provide: APP_INTERCEPTOR,
+        useClass: CacheInterceptor,
+      },],
 })
 export class ShopsModule {}

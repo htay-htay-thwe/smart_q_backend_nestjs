@@ -9,6 +9,8 @@ import { AuthModule } from './auth/auth.module';
 import { QueuesModule } from './queue/queues.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FirebaseModule } from './firebase/firebase.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-ioredis';
 
 @Module({
   imports: [
@@ -23,6 +25,17 @@ import { FirebaseModule } from './firebase/firebase.module';
     CustomersModule,
     AuthModule,
     QueuesModule,
+      CacheModule.registerAsync({
+      isGlobal: true,
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => ({
+        store: redisStore.default,
+        host: config.get<string>('REDIS_HOST'),
+        port: config.get<number>('REDIS_PORT'),
+        password: config.get<string>('REDIS_PASSWORD'),
+        ttl: config.get<number>('REDIS_TTL'),
+      }),
+    }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -32,6 +45,5 @@ import { FirebaseModule } from './firebase/firebase.module';
     }),
   ],
   controllers: [],
-  providers: [],
 })
 export class AppModule {}
