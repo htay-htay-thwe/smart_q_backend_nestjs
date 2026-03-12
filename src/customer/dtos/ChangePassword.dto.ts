@@ -1,9 +1,10 @@
 import { IsNotEmpty, IsString, IsEmail } from 'class-validator';
 
 export class ChangePasswordDto {
+
   @IsString()
   @IsNotEmpty()
-  phoneNumber: string;
+  userId: string;
 
   @IsString()
   @IsNotEmpty()
@@ -13,9 +14,6 @@ export class ChangePasswordDto {
   @IsNotEmpty()
   newPassword: string;
 
-  @IsString()
-  @IsNotEmpty()
-  otp: string;
 }
 
 export class ChangePhoneNumberDto {

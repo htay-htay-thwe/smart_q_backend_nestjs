@@ -172,17 +172,13 @@ export class CustomersService {
   }
 
   async changePassword(
-    phoneNumber: string,
+    userId: string,
     oldPassword: string,
     newPassword: string,
   ) {
-    const isOtpValid = await this.otpService.isPhoneVerified(phoneNumber);
-    if (!isOtpValid) {
-      throw new UnauthorizedException('Phone number not verified with OTP.');
-    }
 
     const customer = await this.customersModel
-      .findOne({ phoneNumber })
+      .findOne({ _id: userId })
       .select('+password');
 
     if (!customer) {

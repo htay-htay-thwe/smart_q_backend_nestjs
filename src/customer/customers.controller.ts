@@ -127,7 +127,7 @@ export class CustomersController {
   @Patch('change-password')
   async changePassword(@Body() changePasswordData: ChangePasswordDto) {
     const result = await this.customersService.changePassword(
-      changePasswordData.phoneNumber,
+      changePasswordData.userId,
       changePasswordData.oldPassword,
       changePasswordData.newPassword,
     );
