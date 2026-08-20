@@ -137,6 +137,7 @@ export class CustomersController {
   @UseGuards(JwtAuthGuard)
   @Patch('change-phone-number')
   async changePhoneNumber(@Body() changePhoneNumberData: ChangePhoneNumberDto) {
+    console.log('Received body:', changePhoneNumberData);
     const result = await this.customersService.changePhoneNumber(
       changePhoneNumberData.oldPhoneNumber,
       changePhoneNumberData.newPhoneNumber,

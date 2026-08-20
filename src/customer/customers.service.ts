@@ -176,7 +176,6 @@ export class CustomersService {
     oldPassword: string,
     newPassword: string,
   ) {
-
     const customer = await this.customersModel
       .findOne({ _id: userId })
       .select('+password');
@@ -208,12 +207,12 @@ export class CustomersService {
 
   async changePhoneNumber(oldPhoneNumber: string, newPhoneNumber: string) {
     // Verify OTP for old phone number
-    const isOldOtpValid = await this.otpService.isPhoneVerified(oldPhoneNumber);
-    if (!isOldOtpValid) {
-      throw new UnauthorizedException(
-        'Old phone number not verified with OTP.',
-      );
-    }
+    // const isOldOtpValid = await this.otpService.isPhoneVerified(oldPhoneNumber);
+    // if (!isOldOtpValid) {
+    //   throw new UnauthorizedException(
+    //     'Old phone number not verified with OTP.',
+    //   );
+    // }
 
     // verify Otp for new phone number
     const isNewOtpValid = await this.otpService.isPhoneVerified(newPhoneNumber);
