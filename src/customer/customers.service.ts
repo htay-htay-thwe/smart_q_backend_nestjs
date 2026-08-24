@@ -249,10 +249,10 @@ export class CustomersService {
 
   async changeEmail(oldEmail: string, newEmail: string) {
     // Verify OTP for old email
-    const isOldOtpValid = await this.otpService.isEmailVerified(oldEmail);
-    if (!isOldOtpValid) {
-      throw new UnauthorizedException('Old email not verified with OTP.');
-    }
+    // const isOldOtpValid = await this.otpService.isEmailVerified(oldEmail);
+    // if (!isOldOtpValid) {
+    //   throw new UnauthorizedException('Old email not verified with OTP.');
+    // }
 
     // verify Otp for new email
     const isNewOtpValid = await this.otpService.isEmailVerified(newEmail);
