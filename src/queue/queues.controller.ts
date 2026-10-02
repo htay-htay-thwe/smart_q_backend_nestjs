@@ -88,6 +88,17 @@ export class QueuesController {
     return history;
   }
 
+  @Get('getQueue-history/customer/:customerId')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
+  async getQueueHistoryByCustomer(
+    @Param('customerId') customerId: string,
+  ) {
+    const history =
+      await this.queuesService.getQueueHistoryByCustomer(customerId);
+    return { data: history };
+  }
+
   @Patch('free-table')
   async freeTableAndUpdateQueue(
     @Body() body: { shop_id: string; table_no: string; table_type_id: string },

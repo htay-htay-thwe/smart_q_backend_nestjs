@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queues } from '../schemas/Queues.schema';
 import { queueData } from './dtos/queueData.dto';
@@ -146,6 +150,12 @@ export class QueuesService {
   }
 
   async generateQrCode(queueId: string, queueQr: string) {
+    if (!Types.ObjectId.isValid(queueId)) {
+      throw new BadRequestException(
+        'queue_id must be a valid MongoDB queue _id; send the generated UUID as queue_qr',
+      );
+    }
+
     const queue = await this.queuesModel.findById(queueId);
     if (!queue) {
       throw new NotFoundException('Queue not found');
@@ -326,6 +336,15 @@ export class QueuesService {
   async getQueueHistoryByShop(shopId: string) {
     return this.queueHistoryModel
       .find({ shop_id: shopId })
+      .populate('customer_id')
+      .populate('shop_id')
+      .sort({ completedAt: -1 })
+      .exec();
+  }
+
+  async getQueueHistoryByCustomer(customerId: string) {
+    return this.queueHistoryModel
+      .find({ customer_id: new Types.ObjectId(customerId) as any })
       .populate('customer_id')
       .populate('shop_id')
       .sort({ completedAt: -1 })
