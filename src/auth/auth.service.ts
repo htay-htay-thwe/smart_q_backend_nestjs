@@ -11,7 +11,10 @@ export class AuthService {
     phoneNumber?: number;
     type: 'shop' | 'customer';
   }) {
-    return this.jwtService.sign(payload);
+    return this.jwtService.sign(
+      payload,
+      payload.type === 'customer' ? { expiresIn: '7d' } : {},
+    );
   }
 
   verifyToken(token: string): Record<string, unknown> | null {
