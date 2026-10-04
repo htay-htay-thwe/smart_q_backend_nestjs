@@ -8,6 +8,7 @@ import {
   UploadedFile,
   Patch,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
@@ -190,5 +191,17 @@ export class CustomersController {
   @Patch('fcm-token')
   async saveFcmToken(@Body() body: { customer_id: string; fcmToken: string }) {
     return this.customersService.saveFcmToken(body.customer_id, body.fcmToken);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('push-token')
+  async savePushToken(
+    @Req() request: any,
+    @Body() body: { token?: string; fcmToken?: string; deviceToken?: string },
+  ) {
+    const customerId = String(request.user?.id ?? request.user?._id ?? request.user?.sub ?? '');
+    const token = body.token ?? body.fcmToken ?? body.deviceToken;
+    if (!token) throw new BadRequestException('Push token is required');
+    return this.customersService.saveFcmToken(customerId, token);
   }
 }

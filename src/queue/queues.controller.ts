@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -121,5 +122,10 @@ export class QueuesController {
   async getQueueById(@Param('id') id: string) {
     const queue = await this.queuesService.getQueueById(id);
     return { data: queue };
+  }
+
+  @Delete(':id')
+  async cancelQueue(@Param('id') id: string) {
+    return { data: await this.queuesService.cancelQueue(id), message: 'Queue cancelled successfully' };
   }
 }

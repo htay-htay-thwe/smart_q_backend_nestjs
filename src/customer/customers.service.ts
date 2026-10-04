@@ -315,7 +315,7 @@ export class CustomersService {
   async saveFcmToken(customer_id: string, fcmToken: string) {
     const customer = await this.customersModel.findByIdAndUpdate(
       customer_id,
-      { fcmToken },
+      { $set: { fcmToken }, $addToSet: { pushTokens: fcmToken } },
       { new: true },
     );
     if (!customer) {

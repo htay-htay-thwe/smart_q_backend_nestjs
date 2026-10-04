@@ -43,6 +43,20 @@ export class FirebaseService implements OnModuleInit {
     body: string,
     data?: Record<string, string>,
   ): Promise<void> {
+    if (/^(ExponentPushToken|ExpoPushToken)\[.+\]$/.test(fcmToken)) {
+      try {
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ to: fcmToken, title, body, data: data ?? {}, sound: 'default', priority: 'high' }),
+        });
+        if (!response.ok) throw new Error(`Expo Push returned ${response.status}`);
+        this.logger.log(`Expo push sent to token: ${fcmToken.slice(0, 24)}...`);
+      } catch (error) {
+        this.logger.error(`Expo push failed: ${error.message}`);
+      }
+      return;
+    }
     if (!admin.apps.length) {
       this.logger.warn('Firebase not initialized — skipping push notification');
       return;

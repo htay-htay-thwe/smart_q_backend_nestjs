@@ -23,6 +23,9 @@ export class Customers {
   @Prop({ required: false })
   fcmToken?: string;
 
+  @Prop({ type: [String], default: [] })
+  pushTokens?: string[];
+
   _id: any;
 }
 

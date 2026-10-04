@@ -78,15 +78,18 @@ export class QueueGateway {
     });
   }
 
-  // Push a wait-time alert to a specific customer's socket room if use socket.io, can send to specific customer room like this:
-  // notifyCustomer(
-  //   customerId: string,
-  //   payload: {
-  //     title: string;
-  //     message: string;
-  //     remaining_minutes: number;
-  //   },
-  // ) {
-  //   this.server.to(`customer:${customerId}`).emit('queueAlert', payload);
-  // }
+  notifyCustomer(
+    customerId: string,
+    payload: {
+      id?: string;
+      type: string;
+      title: string;
+      message: string;
+      queue_id?: string;
+      data?: Record<string, string>;
+      createdAt?: Date;
+    },
+  ) {
+    this.server.to(`customer:${customerId}`).emit('queueAlert', payload);
+  }
 }

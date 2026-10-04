@@ -13,6 +13,7 @@ import { TableTypes } from '../schemas/TableTypes.schema';
 import { AssignTableDto } from './dtos/assignTable.dto';
 import { QueueHistory } from '../schemas/QueueHistory.schema';
 import { QueueGateway } from './queue.gateway';
+import { QueueNotificationService } from './queue-notification.service';
 
 @Injectable()
 export class QueuesService {
@@ -26,6 +27,7 @@ export class QueuesService {
     @InjectModel(QueueHistory.name)
     private queueHistoryModel: Model<QueueHistory>,
     private queueGateway: QueueGateway,
+    private queueNotifications: QueueNotificationService,
   ) {}
 
   async createQueue(queueData: queueData) {
@@ -103,6 +105,7 @@ export class QueuesService {
     });
 
     const savedQueue = await newQueue.save();
+    const shop = await this.shopsModel.findById(queueData.shop_id).select('name').lean();
     const tableType = await this.tableTypesModel
       .findById(queueData.table_type_id)
       .select('type')
@@ -110,6 +113,16 @@ export class QueuesService {
     this.queueGateway.notifyCustomerQueue(queueData.shop_id.toString(), {
       table_type_id: queueData.table_type_id,
       table_type_name: tableType?.type ?? null,
+    });
+    await this.queueNotifications.createAndSend({
+      customerId: queueData.customer_id.toString(),
+      queueId: savedQueue._id.toString(),
+      type: 'QUEUE_JOINED',
+      title: 'Queue joined',
+      message: estimatedWaitTime > 0
+        ? `Estimated wait at ${shop?.name ?? 'the shop'} is about ${estimatedWaitTime} minutes.`
+        : `A table is available at ${shop?.name ?? 'the shop'}. Please proceed to check in.`,
+      data: { estimated_wait_minutes: String(estimatedWaitTime), status },
     });
     return savedQueue;
   }
@@ -165,11 +178,14 @@ export class QueuesService {
     queue.status = 'qr-scanned';
     queue.estimated_wait_time = 0;
     await queue.save();
-
-    // TODO: Send notification to customer (SMS/Push/Email)
-    console.log(
-      `Notification sent to customer for queue ${queue.queue_number}`,
-    );
+    await this.queueNotifications.createAndSend({
+      customerId: queue.customer_id.toString(),
+      queueId: queue._id.toString(),
+      type: 'QR_SCANNED',
+      title: 'Check-in confirmed',
+      message: 'Your QR was scanned successfully. Please wait to be seated.',
+      data: { status: 'qr-scanned' },
+    });
     console.log(`QR Code generated: ${queueQr}`);
 
     return this.getQueueById(queueId);
@@ -210,6 +226,14 @@ export class QueuesService {
         completedAt: new Date(),
       }),
     ]);
+    await this.queueNotifications.createAndSend({
+      customerId: queue.customer_id.toString(),
+      queueId: queue._id.toString(),
+      type: 'SEATED',
+      title: "You've been seated",
+      message: 'Your table is ready and service has started. Enjoy your visit!',
+      data: { status: 'seated', table_no: String(table_no) },
+    });
     return queue;
   }
 
@@ -277,6 +301,27 @@ export class QueuesService {
 
       await session.commitTransaction();
 
+      if (queue) {
+        await this.queueNotifications.createAndSend({
+          customerId: queue.customer_id.toString(),
+          queueId: queue._id.toString(),
+          type: 'QUEUE_COMPLETED',
+          title: 'Queue completed',
+          message: 'Thanks for visiting. Your queue has been completed.',
+          data: { status: 'finished' },
+        });
+      }
+      if (nextQueue) {
+        await this.queueNotifications.createAndSend({
+          customerId: nextQueue.customer_id.toString(),
+          queueId: nextQueue._id.toString(),
+          type: 'QUEUE_READY',
+          title: "It's your turn",
+          message: 'Your table is ready. Please scan the shop QR when you arrive.',
+          data: { status: 'Ready to seat' },
+        });
+      }
+
       // Recalculate estimated_wait_time for ALL remaining waiting customers
       // in this shop+table_type so the cron thresholds stay accurate.
       const remainingWaiting = await this.queuesModel
@@ -305,6 +350,17 @@ export class QueuesService {
             notified_5min: false,
           },
         );
+        const previousWait = Number(remainingWaiting[i].estimated_wait_time || 0);
+        if (previousWait > 0 && Math.abs(previousWait - newWaitTime) >= 10) {
+          await this.queueNotifications.createAndSend({
+            customerId: remainingWaiting[i].customer_id.toString(),
+            queueId: remainingWaiting[i]._id.toString(),
+            type: 'WAIT_ESTIMATE_CHANGED',
+            title: 'Wait time updated',
+            message: `Your estimated wait is now about ${newWaitTime} minutes.`,
+            data: { estimated_wait_minutes: String(newWaitTime) },
+          });
+        }
       }
 
       const tableType = await this.tableTypesModel
@@ -349,5 +405,23 @@ export class QueuesService {
       .populate('shop_id')
       .sort({ completedAt: -1 })
       .exec();
+  }
+
+  async cancelQueue(queueId: string) {
+    if (!Types.ObjectId.isValid(queueId)) throw new BadRequestException('Invalid queue id');
+    const queue = await this.queuesModel.findById(queueId);
+    if (!queue) throw new NotFoundException('Queue not found');
+    queue.status = 'cancelled';
+    await this.queueHistoryModel.create({ ...queue.toObject(), completedAt: new Date() });
+    await this.queuesModel.deleteOne({ _id: queue._id });
+    await this.queueNotifications.createAndSend({
+      customerId: queue.customer_id.toString(),
+      queueId: queue._id.toString(),
+      type: 'QUEUE_CANCELLED',
+      title: 'Queue cancelled',
+      message: `Queue #${queue.queue_number} has been cancelled.`,
+      data: { status: 'cancelled' },
+    });
+    return queue;
   }
 }

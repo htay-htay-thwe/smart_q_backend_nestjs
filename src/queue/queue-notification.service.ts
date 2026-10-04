@@ -7,6 +7,7 @@ import { Customers } from '../schemas/Customers.schema';
 import { Shops } from '../schemas/Shops.schema';
 import { QueueGateway } from './queue.gateway';
 import { FirebaseService } from '../firebase/firebase.service';
+import { Notification } from '../schemas/Notification.schema';
 
 @Injectable()
 export class QueueNotificationService {
@@ -16,9 +17,90 @@ export class QueueNotificationService {
     @InjectModel(Queues.name) private queuesModel: Model<Queues>,
     @InjectModel(Customers.name) private customersModel: Model<Customers>,
     @InjectModel(Shops.name) private shopsModel: Model<Shops>,
+    @InjectModel(Notification.name)
+    private notificationsModel: Model<Notification>,
     private queueGateway: QueueGateway,
     private firebaseService: FirebaseService,
   ) {}
+
+  async createAndSend(input: {
+    customerId: string;
+    queueId?: string;
+    type: string;
+    title: string;
+    message: string;
+    data?: Record<string, string>;
+  }) {
+    const notification = await this.notificationsModel.create({
+      customer_id: input.customerId,
+      queue_id: input.queueId,
+      type: input.type,
+      title: input.title,
+      message: input.message,
+      data: input.data ?? {},
+      isRead: false,
+    });
+    const payload = {
+      id: notification._id.toString(),
+      type: input.type,
+      title: input.title,
+      message: input.message,
+      queue_id: input.queueId,
+      data: input.data,
+      createdAt: (notification as any).createdAt,
+    };
+    this.queueGateway.notifyCustomer(input.customerId, payload);
+    const customer = await this.customersModel
+      .findById(input.customerId)
+      .select('fcmToken pushTokens')
+      .lean();
+    const tokens = Array.from(new Set([
+      ...((customer as any)?.pushTokens ?? []),
+      (customer as any)?.fcmToken,
+    ].filter(Boolean))) as string[];
+    for (const token of tokens) {
+      await this.firebaseService.sendPushNotification(token, input.title, input.message, {
+        type: input.type,
+        queueId: input.queueId ?? '',
+        ...(input.data ?? {}),
+      });
+    }
+    return notification;
+  }
+
+  list(customerId: string, page = 1, limit = 30) {
+    return this.notificationsModel
+      .find({ customer_id: customerId })
+      .sort({ createdAt: -1 })
+      .skip((Math.max(1, page) - 1) * Math.min(100, limit))
+      .limit(Math.min(100, limit))
+      .lean();
+  }
+
+  unreadCount(customerId: string) {
+    return this.notificationsModel.countDocuments({ customer_id: customerId, isRead: false });
+  }
+
+  markRead(customerId: string, notificationId: string) {
+    return this.notificationsModel.findOneAndUpdate(
+      { _id: notificationId, customer_id: customerId },
+      { isRead: true },
+      { new: true },
+    );
+  }
+
+  async markAllRead(customerId: string) {
+    const result = await this.notificationsModel.updateMany(
+      { customer_id: customerId, isRead: false },
+      { isRead: true },
+    );
+    return { updated: result.modifiedCount };
+  }
+
+  async remove(customerId: string, notificationId: string) {
+    await this.notificationsModel.deleteOne({ _id: notificationId, customer_id: customerId });
+    return { deleted: true };
+  }
 
   @Cron(CronExpression.EVERY_MINUTE)
   async checkWaitTimes() {
@@ -105,21 +187,13 @@ export class QueueNotificationService {
       `Notifying customer ${customer._id} — threshold: ${threshold}min — queue #${queue.queue_number}`,
     );
 
-    // 1. Socket.io push (if customer app is connected) if use socket.io, can send to specific customer room like this:
-    // this.queueGateway.notifyCustomer(queue.customer_id.toString(), {
-    //   title,
-    //   message,
-    //   remaining_minutes: remaining,
-    // });
-
-    // 2. FCM push (works even when app is closed/background)
-    if ((customer as any).fcmToken) {
-      await this.firebaseService.sendPushNotification(
-        (customer as any).fcmToken,
-        title,
-        message,
-        { remaining_minutes: String(remaining) },
-      );
-    }
+    await this.createAndSend({
+      customerId: queue.customer_id.toString(),
+      queueId: queue._id.toString(),
+      type: `WAIT_${threshold}_MINUTES`,
+      title,
+      message,
+      data: { remaining_minutes: String(remaining) },
+    });
   }
 }

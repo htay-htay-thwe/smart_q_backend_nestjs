@@ -17,6 +17,8 @@ import { QueueNotificationService } from './queue-notification.service';
 import { CacheInterceptor } from '@nestjs/cache-manager/dist/interceptors/cache.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core/constants';
 import { CacheModule } from '@nestjs/cache-manager/dist/cache.module';
+import { Notification, NotificationSchema } from '../schemas/Notification.schema';
+import { NotificationsController } from './notifications.controller';
 
 @Module({
   imports: [
@@ -28,9 +30,10 @@ import { CacheModule } from '@nestjs/cache-manager/dist/cache.module';
       { name: TableTypes.name, schema: TableTypesSchema },
       { name: QueueHistory.name, schema: QueueHistorySchema },
       { name: Customers.name, schema: CustomersSchema },
+      { name: Notification.name, schema: NotificationSchema },
     ]),
   ],
-  controllers: [QueuesController],
+  controllers: [QueuesController, NotificationsController],
   providers: [QueuesService, QueueGateway, QueueNotificationService,{
           provide: APP_INTERCEPTOR,
           useClass: CacheInterceptor,
