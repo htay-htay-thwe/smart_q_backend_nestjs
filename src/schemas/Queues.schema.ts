@@ -36,6 +36,9 @@ export class Queues {
   @Prop({ required: false, default: false })
   notified_5min: boolean;
 
+  @Prop({ required: false, default: false })
+  notified_next: boolean;
+
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Shops',

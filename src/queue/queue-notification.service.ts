@@ -111,11 +111,11 @@ export class QueueNotificationService {
       .lean();
 
     for (const queue of waitingQueues) {
-      const createdAt = (queue as any).createdAt as Date;
-      if (!createdAt) continue;
+      const estimateUpdatedAt = ((queue as any).updatedAt ?? (queue as any).createdAt) as Date;
+      if (!estimateUpdatedAt) continue;
 
       const elapsedMinutes = Math.floor(
-        (Date.now() - new Date(createdAt).getTime()) / 60_000,
+        (Date.now() - new Date(estimateUpdatedAt).getTime()) / 60_000,
       );
       const remaining = queue.estimated_wait_time - elapsedMinutes;
 

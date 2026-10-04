@@ -348,8 +348,19 @@ export class QueuesService {
             notified_20min: false,
             notified_10min: false,
             notified_5min: false,
+            ...(i === 0 && !remainingWaiting[i].notified_next ? { notified_next: true } : {}),
           },
         );
+        if (i === 0 && !remainingWaiting[i].notified_next) {
+          await this.queueNotifications.createAndSend({
+            customerId: remainingWaiting[i].customer_id.toString(),
+            queueId: remainingWaiting[i]._id.toString(),
+            type: 'QUEUE_NEXT',
+            title: "You're next",
+            message: 'One queue is ahead of you. Please be ready to head to the counter.',
+            data: { position: '1', estimated_wait_minutes: String(newWaitTime) },
+          });
+        }
         const previousWait = Number(remainingWaiting[i].estimated_wait_time || 0);
         if (previousWait > 0 && Math.abs(previousWait - newWaitTime) >= 10) {
           await this.queueNotifications.createAndSend({
