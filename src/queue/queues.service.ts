@@ -213,35 +213,44 @@ export class QueuesService {
 
   async assignTable(assignTableData: AssignTableDto) {
     const { queue_id, table_no, table_type_id, shop_id } = assignTableData;
-
-    // 🔥 Single update instead of find + save
-    const queue = await this.queuesModel.findByIdAndUpdate(
-      queue_id,
-      {
-        table_no,
-        table_type_id,
-        shop_id,
-        status: 'seated',
-        readyAt: null,
-        noShowDeadline: null,
-      },
-      { new: true },
-    );
-
-    if (!queue) {
-      throw new NotFoundException('Queue not found');
+    if (![queue_id, table_type_id, shop_id].every((id) => Types.ObjectId.isValid(id))) {
+      throw new BadRequestException('Invalid queue, shop, or table type id');
     }
 
-    if (!queue.queue_qr) {
-      throw new Error('QR code not generated yet.');
+    const session = await this.queuesModel.db.startSession();
+    let queue: any;
+    try {
+      await session.withTransaction(async () => {
+        queue = await this.queuesModel
+          .findOne({ _id: queue_id, shop_id })
+          .session(session);
+        if (!queue) throw new NotFoundException('Queue not found or no longer active');
+        if (queue.status !== 'qr-scanned' || !queue.queue_qr) {
+          throw new BadRequestException('Customer must complete QR check-in before seat assignment');
+        }
+
+        const occupied = await this.tableStatusModel
+          .findOne({ shop_id, table_type_id, table_no, isActive: true })
+          .session(session)
+          .lean();
+        if (occupied) throw new ConflictException('This table is already occupied');
+
+        queue.table_no = table_no;
+        queue.table_type_id = table_type_id;
+        queue.status = 'seated';
+        queue.readyAt = null;
+        queue.noShowDeadline = null;
+        await queue.save({ session });
+        await this.tableStatusModel.create(
+          [{ queue_id, shop_id, table_no, table_type_id, isActive: true }],
+          { session },
+        );
+      });
+    } finally {
+      await session.endSession();
     }
-    await this.tableStatusModel.create({
-      queue_id,
-      shop_id,
-      table_no,
-      table_type_id,
-      isActive: true,
-    });
+
+    if (!queue) throw new NotFoundException('Queue not found or no longer active');
     await this.queueNotifications.createAndSend({
       customerId: queue.customer_id.toString(),
       queueId: queue._id.toString(),

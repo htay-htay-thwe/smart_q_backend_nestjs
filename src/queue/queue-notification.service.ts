@@ -62,12 +62,18 @@ export class QueueNotificationService {
       (customer as any)?.fcmToken,
     ].filter(Boolean))) as string[];
     for (const token of tokens) {
-      await this.firebaseService.sendPushNotification(token, input.title, input.message, {
-        type: input.type,
-        notificationType: input.type,
-        queueId: input.queueId ?? '',
-        ...(input.data ?? {}),
-      });
+      try {
+        await this.firebaseService.sendPushNotification(token, input.title, input.message, {
+          type: input.type,
+          notificationType: input.type,
+          queueId: input.queueId ?? '',
+          ...(input.data ?? {}),
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Push delivery failed for customer ${input.customerId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
     }
     return notification;
   }
