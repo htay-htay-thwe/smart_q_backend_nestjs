@@ -420,6 +420,10 @@ export class QueuesService {
 
 
   async getQueueHistoryByShop(shopId: string) {
+    await this.queueHistoryModel.updateMany(
+      { shop_id: shopId, status: 'no-show' },
+      { $set: { status: 'expired', expirationReason: 'no-show' } },
+    );
     return this.queueHistoryModel
       .find({ shop_id: shopId })
       .populate('customer_id')
@@ -429,6 +433,13 @@ export class QueuesService {
   }
 
   async getQueueHistoryByCustomer(customerId: string) {
+    await this.queueHistoryModel.updateMany(
+      {
+        customer_id: new Types.ObjectId(customerId) as any,
+        status: 'no-show',
+      },
+      { $set: { status: 'expired', expirationReason: 'no-show' } },
+    );
     return this.queueHistoryModel
       .find({ customer_id: new Types.ObjectId(customerId) as any })
       .populate('customer_id')

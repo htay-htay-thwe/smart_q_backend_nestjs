@@ -14,9 +14,6 @@ import { Customers, CustomersSchema } from '../schemas/Customers.schema';
 import { AuthModule } from '../auth/auth.module';
 import { QueueGateway } from './queue.gateway';
 import { QueueNotificationService } from './queue-notification.service';
-import { CacheInterceptor } from '@nestjs/cache-manager/dist/interceptors/cache.interceptor';
-import { APP_INTERCEPTOR } from '@nestjs/core/constants';
-import { CacheModule } from '@nestjs/cache-manager/dist/cache.module';
 import { Notification, NotificationSchema } from '../schemas/Notification.schema';
 import { NotificationsController } from './notifications.controller';
 
@@ -34,9 +31,6 @@ import { NotificationsController } from './notifications.controller';
     ]),
   ],
   controllers: [QueuesController, NotificationsController],
-  providers: [QueuesService, QueueGateway, QueueNotificationService,{
-          provide: APP_INTERCEPTOR,
-          useClass: CacheInterceptor,
-        }],
+  providers: [QueuesService, QueueGateway, QueueNotificationService],
 })
 export class QueuesModule {}
