@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -32,6 +33,20 @@ export class QueuesService {
 
   async createQueue(queueData: queueData) {
     console.log('Creating queue with data:', queueData);
+    const existingQueue = await this.queuesModel
+      .findOne({
+        customer_id: queueData.customer_id,
+        status: { $nin: ['finished', 'completed', 'cancelled', 'canceled', 'no-show'] },
+      })
+      .select('_id status queue_number')
+      .lean();
+
+    if (existingQueue) {
+      throw new ConflictException(
+        'You already have an active queue. Complete or cancel it before joining another queue.',
+      );
+    }
+
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
