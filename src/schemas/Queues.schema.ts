@@ -39,10 +39,10 @@ export class Queues {
   @Prop({ required: false, default: false })
   notified_next: boolean;
 
-  @Prop({ required: false, default: null })
+  @Prop({ type: Date, required: false, default: null })
   readyAt: Date | null;
 
-  @Prop({ required: false, default: null })
+  @Prop({ type: Date, required: false, default: null })
   noShowDeadline: Date | null;
 
   @Prop({
