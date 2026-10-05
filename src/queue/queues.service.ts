@@ -36,7 +36,6 @@ export class QueuesService {
     const existingQueue = await this.queuesModel
       .findOne({
         customer_id: queueData.customer_id,
-        status: { $nin: ['finished', 'completed', 'cancelled', 'canceled', 'no-show'] },
       })
       .select('_id status queue_number')
       .lean();
