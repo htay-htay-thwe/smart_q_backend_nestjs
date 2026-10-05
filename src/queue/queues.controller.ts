@@ -40,16 +40,12 @@ export class QueuesController {
   }
 
   @Get('shop/:shopId')
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
   async getQueuesByShop(@Param('shopId') shopId: string) {
     const queues = await this.queuesService.getQueuesByShop(shopId);
     return { data: queues };
   }
 
   @Get('customer/:customerId')
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
   async getQueuesByCustomer(@Param('customerId') customerId: string) {
     const queues = await this.queuesService.getQueuesByCustomer(customerId);
     return { data: queues };
