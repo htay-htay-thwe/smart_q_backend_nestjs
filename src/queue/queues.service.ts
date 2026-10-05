@@ -192,7 +192,26 @@ export class QueuesService {
       throw new NotFoundException('Queue not found');
     }
 
-    queue.queue_qr = queueQr;
+    let qrPayload: { shop_id?: string; queue_qr?: string };
+    try {
+      qrPayload = JSON.parse(queueQr);
+    } catch {
+      throw new BadRequestException(
+        'Invalid shop QR code. Ask the shop to generate a new code.',
+      );
+    }
+    const qrShopId = String(qrPayload?.shop_id ?? '');
+    const qrCode = String(qrPayload?.queue_qr ?? '').trim();
+    if (!Types.ObjectId.isValid(qrShopId) || !qrCode) {
+      throw new BadRequestException('Invalid Smart Queue shop QR code');
+    }
+    if (queue.shop_id.toString() !== qrShopId) {
+      throw new BadRequestException(
+        'This QR code belongs to a different shop',
+      );
+    }
+
+    queue.queue_qr = qrCode;
     queue.status = 'qr-scanned';
     queue.estimated_wait_time = 0;
     queue.readyAt = null;
@@ -206,7 +225,7 @@ export class QueuesService {
       message: 'Your QR was scanned successfully. Please wait to be seated.',
       data: { status: 'qr-scanned' },
     });
-    console.log(`QR Code generated: ${queueQr}`);
+    console.log(`QR check-in confirmed for shop: ${qrShopId}`);
 
     return this.getQueueById(queueId);
   }
