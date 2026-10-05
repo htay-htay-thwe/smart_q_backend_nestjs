@@ -43,12 +43,15 @@ export class FirebaseService implements OnModuleInit {
     body: string,
     data?: Record<string, string>,
   ): Promise<void> {
+    const channelId = data?.notificationType === 'QUEUE_READY' || data?.notificationType === 'QR_SCANNED'
+      ? 'queue-ready'
+      : 'queue-updates';
     if (/^(ExponentPushToken|ExpoPushToken)\[.+\]$/.test(fcmToken)) {
       try {
         const response = await fetch('https://exp.host/--/api/v2/push/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ to: fcmToken, title, body, data: data ?? {}, sound: 'default', priority: 'high' }),
+          body: JSON.stringify({ to: fcmToken, title, body, data: data ?? {}, sound: 'default', priority: 'high', channelId }),
         });
         if (!response.ok) throw new Error(`Expo Push returned ${response.status}`);
         this.logger.log(`Expo push sent to token: ${fcmToken.slice(0, 24)}...`);
@@ -68,7 +71,7 @@ export class FirebaseService implements OnModuleInit {
         data: data ?? {},
         android: {
           priority: 'high',
-          notification: { sound: 'default' },
+          notification: { sound: 'default', channelId },
         },
         apns: {
           payload: {

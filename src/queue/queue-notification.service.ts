@@ -61,6 +61,7 @@ export class QueueNotificationService {
     for (const token of tokens) {
       await this.firebaseService.sendPushNotification(token, input.title, input.message, {
         type: input.type,
+        notificationType: input.type,
         queueId: input.queueId ?? '',
         ...(input.data ?? {}),
       });
