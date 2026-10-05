@@ -186,36 +186,46 @@ export class QueueNotificationService {
         completedAt: new Date(),
       });
 
-      await this.notificationsModel.create({
-        customer_id: queue.customer_id,
-        queue_id: queue._id.toString(),
+      await this.queuesModel.deleteOne({ _id: updated._id });
+
+      const nextQueue = await this.queuesModel.findOneAndUpdate(
+        {
+          shop_id: updated.shop_id,
+          table_type_id: updated.table_type_id,
+          status: 'waiting',
+        },
+        {
+          status: 'Ready to seat',
+          estimated_wait_time: 0,
+          readyAt: new Date(),
+          noShowDeadline: new Date(Date.now() + 15 * 60_000),
+        },
+        { sort: { queue_number: 1 }, new: true },
+      );
+
+      await this.createAndSend({
+        customerId: updated.customer_id.toString(),
+        queueId: updated._id.toString(),
         type: 'QUEUE_NO_SHOW',
         title: 'Queue cancelled',
         message: 'Your queue was cancelled because you did not check in within 15 minutes.',
         data: { status: 'no-show' },
-        isRead: false,
       });
-      await this.queueGateway.notifyCustomer(queue.customer_id.toString(), {
-        id: queue._id.toString(),
-        type: 'QUEUE_NO_SHOW',
-        title: 'Queue cancelled',
-        message: 'Your queue was cancelled because you did not check in within 15 minutes.',
-        queue_id: queue._id.toString(),
-        data: { status: 'no-show' },
-        createdAt: new Date(),
-      });
-      const customer = await this.customersModel.findById(queue.customer_id).select('fcmToken pushTokens').lean();
-      const tokens = Array.from(new Set([
-        ...((customer as any)?.pushTokens ?? []),
-        (customer as any)?.fcmToken,
-      ].filter(Boolean))) as string[];
-      for (const token of tokens) {
-        await this.firebaseService.sendPushNotification(token, 'Queue cancelled', 'Your queue was cancelled because you did not check in within 15 minutes.', {
-          type: 'QUEUE_NO_SHOW',
-          notificationType: 'QUEUE_NO_SHOW',
-          queueId: queue._id.toString(),
+
+      if (nextQueue) {
+        await this.createAndSend({
+          customerId: nextQueue.customer_id.toString(),
+          queueId: nextQueue._id.toString(),
+          type: 'QUEUE_READY',
+          title: "It's your turn",
+          message: 'A table is available. Please scan the shop QR within 15 minutes.',
+          data: { status: 'Ready to seat' },
         });
       }
+
+      this.queueGateway.notifyQueueUpdate(updated.shop_id.toString(), {
+        table_type_id: updated.table_type_id,
+      });
     }
   }
 
