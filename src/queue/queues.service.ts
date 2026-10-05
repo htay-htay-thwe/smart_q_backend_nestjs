@@ -65,6 +65,8 @@ export class QueuesService {
     let estimatedWaitTime = 0;
     let queueNumber = 0;
     let status = 'Ready to seat';
+    const readyAt = status === 'Ready to seat' ? new Date() : null;
+    const noShowDeadline = readyAt ? new Date(readyAt.getTime() + 15 * 60_000) : null;
 
     if (!hasAvailableTable) {
       const waitingAhead = await this.queuesModel.countDocuments({
@@ -102,6 +104,8 @@ export class QueuesService {
       estimated_wait_time: estimatedWaitTime,
       notification_sent: false,
       userRequirements: queueData.userRequirements || '',
+      readyAt,
+      noShowDeadline,
     });
 
     const savedQueue = await newQueue.save();
@@ -177,6 +181,8 @@ export class QueuesService {
     queue.queue_qr = queueQr;
     queue.status = 'qr-scanned';
     queue.estimated_wait_time = 0;
+    queue.readyAt = null;
+    queue.noShowDeadline = null;
     await queue.save();
     await this.queueNotifications.createAndSend({
       customerId: queue.customer_id.toString(),
@@ -202,6 +208,8 @@ export class QueuesService {
         table_type_id,
         shop_id,
         status: 'seated',
+        readyAt: null,
+        noShowDeadline: null,
       },
       { new: true },
     );
@@ -291,6 +299,8 @@ export class QueuesService {
         {
           status: 'Ready to seat',
           estimated_wait_time: 0,
+          readyAt: new Date(),
+          noShowDeadline: new Date(Date.now() + 15 * 60_000),
         },
         {
           session,

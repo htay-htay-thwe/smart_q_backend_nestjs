@@ -8,6 +8,7 @@ import { Shops } from '../schemas/Shops.schema';
 import { QueueGateway } from './queue.gateway';
 import { FirebaseService } from '../firebase/firebase.service';
 import { Notification } from '../schemas/Notification.schema';
+import { QueueHistory } from '../schemas/QueueHistory.schema';
 
 @Injectable()
 export class QueueNotificationService {
@@ -19,6 +20,8 @@ export class QueueNotificationService {
     @InjectModel(Shops.name) private shopsModel: Model<Shops>,
     @InjectModel(Notification.name)
     private notificationsModel: Model<Notification>,
+    @InjectModel(QueueHistory.name)
+    private queueHistoryModel: Model<QueueHistory>,
     private queueGateway: QueueGateway,
     private firebaseService: FirebaseService,
   ) {}
@@ -106,6 +109,7 @@ export class QueueNotificationService {
   @Cron(CronExpression.EVERY_MINUTE)
   async checkWaitTimes() {
     this.logger.debug('Checking queue wait times...');
+    await this.cancelExpiredNoShows();
 
     const waitingQueues = await this.queuesModel
       .find({ status: 'waiting', estimated_wait_time: { $gt: 0 } })
@@ -152,6 +156,66 @@ export class QueueNotificationService {
       await this.queuesModel.updateOne({ _id: queue._id }, updateFlags);
 
       await this.sendThresholdNotification(queue, threshold, remaining);
+    }
+  }
+
+  private async cancelExpiredNoShows() {
+    const expired = await this.queuesModel
+      .find({ status: 'Ready to seat', noShowDeadline: { $lte: new Date() } })
+      .lean();
+
+    for (const queue of expired) {
+      const updated = await this.queuesModel.findOneAndUpdate(
+        { _id: queue._id, status: 'Ready to seat', noShowDeadline: { $lte: new Date() } },
+        { status: 'no-show', readyAt: null, noShowDeadline: null },
+        { new: true },
+      );
+      if (!updated) continue;
+
+      await this.queueHistoryModel.create({
+        queue_number: updated.queue_number,
+        table_type_id: updated.table_type_id,
+        table_no: updated.table_no,
+        queue_qr: updated.queue_qr,
+        status: updated.status,
+        userRequirements: updated.userRequirements,
+        estimated_wait_time: updated.estimated_wait_time,
+        notification_sent: updated.notification_sent,
+        shop_id: updated.shop_id,
+        customer_id: updated.customer_id,
+        completedAt: new Date(),
+      });
+
+      await this.notificationsModel.create({
+        customer_id: queue.customer_id,
+        queue_id: queue._id.toString(),
+        type: 'QUEUE_NO_SHOW',
+        title: 'Queue cancelled',
+        message: 'Your queue was cancelled because you did not check in within 15 minutes.',
+        data: { status: 'no-show' },
+        isRead: false,
+      });
+      await this.queueGateway.notifyCustomer(queue.customer_id.toString(), {
+        id: queue._id.toString(),
+        type: 'QUEUE_NO_SHOW',
+        title: 'Queue cancelled',
+        message: 'Your queue was cancelled because you did not check in within 15 minutes.',
+        queue_id: queue._id.toString(),
+        data: { status: 'no-show' },
+        createdAt: new Date(),
+      });
+      const customer = await this.customersModel.findById(queue.customer_id).select('fcmToken pushTokens').lean();
+      const tokens = Array.from(new Set([
+        ...((customer as any)?.pushTokens ?? []),
+        (customer as any)?.fcmToken,
+      ].filter(Boolean))) as string[];
+      for (const token of tokens) {
+        await this.firebaseService.sendPushNotification(token, 'Queue cancelled', 'Your queue was cancelled because you did not check in within 15 minutes.', {
+          type: 'QUEUE_NO_SHOW',
+          notificationType: 'QUEUE_NO_SHOW',
+          queueId: queue._id.toString(),
+        });
+      }
     }
   }
 

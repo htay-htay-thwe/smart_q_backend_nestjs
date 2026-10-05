@@ -43,6 +43,12 @@ export class QueueHistory {
 
   @Prop({ required: true })
   completedAt: Date;
+
+  @Prop({ required: false, default: null })
+  readyAt: Date | null;
+
+  @Prop({ required: false, default: null })
+  noShowDeadline: Date | null;
 }
 
 export const QueueHistorySchema = SchemaFactory.createForClass(QueueHistory);
