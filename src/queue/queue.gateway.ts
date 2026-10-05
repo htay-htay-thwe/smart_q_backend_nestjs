@@ -78,6 +78,10 @@ export class QueueGateway {
     });
   }
 
+  notifyQueueExpired(shopId: string, payload: { queue_id: string; queue_number: number }) {
+    this.server.to(shopId).emit('queueExpired', payload);
+  }
+
   notifyCustomer(
     customerId: string,
     payload: {

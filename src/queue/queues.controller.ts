@@ -70,24 +70,18 @@ export class QueuesController {
   }
 
   @Get('get-table-status/:shopId')
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
   async getTableStatus(@Param('shopId') shopId: string) {
     const tableStatus = await this.queuesService.getTableStatus(shopId);
     return { data: tableStatus };
   }
 
   @Get('getQueue-history/:shopId')
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
   async getQueueHistoryByShop(@Param('shopId') shopId: string) {
     const history = await this.queuesService.getQueueHistoryByShop(shopId);
     return history;
   }
 
   @Get('getQueue-history/customer/:customerId')
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
   async getQueueHistoryByCustomer(
     @Param('customerId') customerId: string,
   ) {
@@ -113,8 +107,6 @@ export class QueuesController {
   }
 
   @Get(':id')
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(30)
   async getQueueById(@Param('id') id: string) {
     const queue = await this.queuesService.getQueueById(id);
     return { data: queue };

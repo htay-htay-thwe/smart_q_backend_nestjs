@@ -167,7 +167,7 @@ export class QueueNotificationService {
     for (const queue of expired) {
       const updated = await this.queuesModel.findOneAndUpdate(
         { _id: queue._id, status: 'Ready to seat', noShowDeadline: { $lte: new Date() } },
-        { status: 'no-show', readyAt: null, noShowDeadline: null },
+        { status: 'expired', readyAt: null, noShowDeadline: null },
         { new: true },
       );
       if (!updated) continue;
@@ -181,6 +181,7 @@ export class QueueNotificationService {
         userRequirements: updated.userRequirements,
         estimated_wait_time: updated.estimated_wait_time,
         notification_sent: updated.notification_sent,
+        expirationReason: 'no-show',
         shop_id: updated.shop_id,
         customer_id: updated.customer_id,
         completedAt: new Date(),
@@ -206,10 +207,10 @@ export class QueueNotificationService {
       await this.createAndSend({
         customerId: updated.customer_id.toString(),
         queueId: updated._id.toString(),
-        type: 'QUEUE_NO_SHOW',
-        title: 'Queue cancelled',
-        message: 'Your queue was cancelled because you did not check in within 15 minutes.',
-        data: { status: 'no-show' },
+        type: 'QUEUE_EXPIRED',
+        title: 'Queue expired',
+        message: 'Your queue expired because you did not check in within 15 minutes.',
+        data: { status: 'expired', reason: 'no-show' },
       });
 
       if (nextQueue) {
@@ -223,8 +224,9 @@ export class QueueNotificationService {
         });
       }
 
-      this.queueGateway.notifyQueueUpdate(updated.shop_id.toString(), {
-        table_type_id: updated.table_type_id,
+      this.queueGateway.notifyQueueExpired(updated.shop_id.toString(), {
+        queue_id: updated._id.toString(),
+        queue_number: updated.queue_number,
       });
     }
   }

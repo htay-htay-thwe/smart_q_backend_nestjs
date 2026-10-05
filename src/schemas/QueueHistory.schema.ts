@@ -27,6 +27,9 @@ export class QueueHistory {
   @Prop({ required: false, default: false })
   notification_sent: boolean;
 
+  @Prop({ required: false, default: null })
+  expirationReason?: string;
+
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Shops',

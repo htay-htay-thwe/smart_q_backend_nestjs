@@ -235,19 +235,13 @@ export class QueuesService {
     if (!queue.queue_qr) {
       throw new Error('QR code not generated yet.');
     }
-    await Promise.all([
-      this.tableStatusModel.create({
-        queue_id,
-        shop_id,
-        table_no,
-        table_type_id,
-        isActive: true,
-      }),
-      this.queueHistoryModel.create({
-        ...queue.toObject(),
-        completedAt: new Date(),
-      }),
-    ]);
+    await this.tableStatusModel.create({
+      queue_id,
+      shop_id,
+      table_no,
+      table_type_id,
+      isActive: true,
+    });
     await this.queueNotifications.createAndSend({
       customerId: queue.customer_id.toString(),
       queueId: queue._id.toString(),
@@ -423,6 +417,7 @@ export class QueuesService {
     const tables = await this.tableStatusModel.find({ shop_id: shopId }).lean();
     return tables;
   }
+
 
   async getQueueHistoryByShop(shopId: string) {
     return this.queueHistoryModel
