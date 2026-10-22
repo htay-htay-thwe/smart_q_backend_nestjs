@@ -11,8 +11,11 @@ export class Customers {
   @Prop({ unique: true, sparse: true })
   phoneNumber?: string;
 
-  @Prop({ required: true, select: false })
-  password: string;
+  @Prop({ required: false, select: false })
+  password?: string;
+
+  @Prop({ unique: true, sparse: true })
+  googleId?: string;
 
   @Prop({ required: false })
   profileImg: string;

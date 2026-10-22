@@ -15,15 +15,81 @@ import { OtpService } from '../otp/otp.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
 import { CustomerLoginDto } from './dtos/CustomerLogin.dto';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class CustomersService {
+  private readonly googleClient = new OAuth2Client();
   constructor(
     @InjectModel(Customers.name) private customersModel: Model<Customers>,
     private authService: AuthService,
     private otpService: OtpService,
     private cloudinaryService: CloudinaryService,
   ) {}
+
+  async authenticateWithGoogle(idToken: string) {
+    const audiences = [
+      process.env.GOOGLE_WEB_CLIENT_ID,
+      process.env.GOOGLE_ANDROID_CLIENT_ID,
+      process.env.GOOGLE_IOS_CLIENT_ID,
+    ].filter((value): value is string => Boolean(value));
+    if (!audiences.length) {
+      throw new BadRequestException(
+        'Google sign-in is not configured on the server.',
+      );
+    }
+    let payload;
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken,
+        audience: audiences,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Invalid or expired Google sign-in.');
+    }
+    if (!payload?.sub || !payload.email || payload.email_verified !== true) {
+      throw new UnauthorizedException(
+        'Google account must have a verified email address.',
+      );
+    }
+    const email = payload.email.trim().toLowerCase();
+    let customer = await this.customersModel.findOne({
+      $or: [{ googleId: payload.sub }, { email }],
+    });
+    const isNewAccount = !customer;
+    if (customer) {
+      const owner = await this.customersModel.findOne({
+        googleId: payload.sub,
+        _id: { $ne: customer._id },
+      });
+      if (owner) {
+        throw new ConflictException(
+          'This Google account is already linked to another customer.',
+        );
+      }
+      customer.googleId = payload.sub;
+      customer.isVerified = true;
+      if (!customer.profileImg && payload.picture) {
+        customer.profileImg = payload.picture;
+      }
+      if (!customer.name && payload.name) customer.name = payload.name;
+      await customer.save();
+    } else {
+      customer = await this.customersModel.create({
+        googleId: payload.sub,
+        name: payload.name?.trim() || email.split('@')[0],
+        email,
+        profileImg: payload.picture || null,
+        isVerified: true,
+      });
+    }
+    return {
+      customer,
+      token: this.generateTokenForCustomer(customer),
+      isNewAccount,
+    };
+  }
 
   async registerCustomer(
     userData: CustomerInformationDto,

@@ -31,6 +31,7 @@ import {
   VerifyOtpDto,
   VerifyOtpEmailDto,
 } from './dtos/Otp.dto';
+import { GoogleAuthDto } from './dtos/GoogleAuth.dto';
 
 @Controller('api/customers')
 export class CustomersController {
@@ -38,6 +39,29 @@ export class CustomersController {
     private customersService: CustomersService,
     private otpService: OtpService,
   ) {}
+
+  @Post('google-auth')
+  async googleAuth(
+    @Body() data: GoogleAuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.customersService.authenticateWithGoogle(
+      data.idToken,
+    );
+    res.cookie('auth_token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return {
+      data: {
+        customer: result.customer,
+        token: result.token,
+        isNewAccount: result.isNewAccount,
+      },
+    };
+  }
 
   @Post('send-email-otp')
   async sendEmailOtp(@Body() data: SendOtpEmailDto) {
