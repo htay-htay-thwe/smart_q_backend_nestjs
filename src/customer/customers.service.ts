@@ -28,11 +28,9 @@ export class CustomersService {
   ) {}
 
   async authenticateWithGoogle(idToken: string) {
-    const audiences = [
-      process.env.GOOGLE_WEB_CLIENT_ID,
-      process.env.GOOGLE_ANDROID_CLIENT_ID,
-      process.env.GOOGLE_IOS_CLIENT_ID,
-    ].filter((value): value is string => Boolean(value));
+    const audiences = [process.env.GOOGLE_WEB_CLIENT_ID].filter(
+      (value): value is string => Boolean(value),
+    );
     if (!audiences.length) {
       throw new BadRequestException(
         'Google sign-in is not configured on the server.',
