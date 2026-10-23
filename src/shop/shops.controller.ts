@@ -12,6 +12,8 @@ import {
   UploadedFile,
   BadRequestException,
   Param,
+  Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
@@ -34,6 +36,7 @@ import {
   ChangeShopEmailDto,
   ChangeShopPhoneDto,
   UpdateShopDto,
+  UpdateQueueAvailabilityDto,
 } from './dtos/ChangeShop.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CacheInterceptor } from '@nestjs/cache-manager/dist/interceptors/cache.interceptor';
@@ -223,6 +226,27 @@ export class ShopsController {
     return {
       data: shopData,
       message: 'Shop Information changed successfully.',
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('queue-availability')
+  async updateQueueAvailability(
+    @Req() request: any,
+    @Body() data: UpdateQueueAvailabilityDto,
+  ) {
+    if (request.user?.type !== 'shop' || !request.user?.id) {
+      throw new ForbiddenException('Only shop accounts can change queue availability');
+    }
+    const shop = await this.shopsService.updateQueueAvailability(
+      request.user.id,
+      data.isQueueOpen,
+    );
+    return {
+      data: shop,
+      message: data.isQueueOpen
+        ? 'Queue joining is now open'
+        : 'Queue joining is now closed',
     };
   }
 

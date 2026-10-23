@@ -23,6 +23,9 @@ export class Shops {
   @Prop({ required: true })
   description: string;
 
+  @Prop({ required: true, default: true })
+  isQueueOpen: boolean;
+
   @Prop({
     type: {
       fullAddress: String,

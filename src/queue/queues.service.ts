@@ -74,6 +74,16 @@ export class QueuesService {
 
   async createQueue(queueData: queueData) {
     console.log('Creating queue with data:', queueData);
+    const queueShop = await this.shopsModel
+      .findById(queueData.shop_id)
+      .select('isQueueOpen')
+      .lean();
+    if (!queueShop) throw new NotFoundException('Shop not found');
+    if (queueShop.isQueueOpen === false) {
+      throw new BadRequestException(
+        'This shop is not accepting new queues right now.',
+      );
+    }
     const existingQueue = await this.queuesModel
       .findOne({
         customer_id: queueData.customer_id,

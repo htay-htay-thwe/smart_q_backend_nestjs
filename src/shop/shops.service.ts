@@ -389,6 +389,22 @@ export class ShopsService {
     return shopData;
   }
 
+  async updateQueueAvailability(shopId: string, isQueueOpen: boolean) {
+    if (!Types.ObjectId.isValid(shopId)) {
+      throw new BadRequestException('Invalid shop id');
+    }
+    const shop = await this.shopsModel
+      .findByIdAndUpdate(
+        shopId,
+        { $set: { isQueueOpen } },
+        { new: true },
+      )
+      .populate('shopTypes')
+      .populate('tableTypes');
+    if (!shop) throw new NotFoundException('Shop not found.');
+    return shop;
+  }
+
   async findMostQueueUsers(id: string) {
     return this.QueueHistorySchema.aggregate([
       {

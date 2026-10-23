@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class ChangeShopPasswordDto {
   @IsEmail()
@@ -66,4 +66,9 @@ export class UpdateShopDto {
   @IsNumber()
   @IsNotEmpty()
   tableSix: number;
+}
+
+export class UpdateQueueAvailabilityDto {
+  @IsBoolean()
+  isQueueOpen: boolean;
 }
