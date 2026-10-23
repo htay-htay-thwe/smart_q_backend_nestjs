@@ -15,6 +15,8 @@ import { AssignTableDto } from './dtos/assignTable.dto';
 import { QueueHistory } from '../schemas/QueueHistory.schema';
 import { QueueGateway } from './queue.gateway';
 import { QueueNotificationService } from './queue-notification.service';
+import { randomUUID } from 'crypto';
+import { ShopQrToken } from '../schemas/ShopQrToken.schema';
 
 @Injectable()
 export class QueuesService {
@@ -29,7 +31,46 @@ export class QueuesService {
     private queueHistoryModel: Model<QueueHistory>,
     private queueGateway: QueueGateway,
     private queueNotifications: QueueNotificationService,
+    @InjectModel(ShopQrToken.name) private shopQrTokenModel: Model<ShopQrToken>,
   ) {}
+
+  async createShopQr(shopId: string) {
+    if (!Types.ObjectId.isValid(shopId)) {
+      throw new BadRequestException('Invalid shop id');
+    }
+    const shopExists = await this.shopsModel.exists({ _id: shopId });
+    if (!shopExists) throw new NotFoundException('Shop not found');
+
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60_000);
+    await this.shopQrTokenModel.create({
+      token,
+      shop_id: shopId,
+      used_by_queue_id: null,
+      used_at: null,
+      expires_at: expiresAt,
+    });
+    return {
+      token,
+      used: false,
+      expires_at: expiresAt,
+      qr_value: JSON.stringify({
+        type: 'smart-queue-check-in',
+        version: 1,
+        shop_id: shopId,
+        queue_qr: token,
+      }),
+    };
+  }
+
+  async getShopQrStatus(token: string) {
+    const qr = await this.shopQrTokenModel
+      .findOne({ token })
+      .select('used_at expires_at')
+      .lean();
+    if (!qr) throw new NotFoundException('QR code not found or expired');
+    return { used: Boolean(qr.used_at), expires_at: qr.expires_at };
+  }
 
   async createQueue(queueData: queueData) {
     console.log('Creating queue with data:', queueData);
@@ -191,6 +232,11 @@ export class QueuesService {
     if (!queue) {
       throw new NotFoundException('Queue not found');
     }
+    if (String(queue.status).trim().toLowerCase() !== 'ready to seat') {
+      throw new BadRequestException(
+        'Only customers with Ready to seat status can scan the shop QR',
+      );
+    }
 
     let qrPayload: { shop_id?: string; queue_qr?: string };
     try {
@@ -211,12 +257,50 @@ export class QueuesService {
       );
     }
 
-    queue.queue_qr = qrCode;
-    queue.status = 'qr-scanned';
-    queue.estimated_wait_time = 0;
-    queue.readyAt = null;
-    queue.noShowDeadline = null;
-    await queue.save();
+    const claimedQr = await this.shopQrTokenModel.findOneAndUpdate(
+      {
+        token: qrCode,
+        shop_id: queue.shop_id,
+        used_at: null,
+        expires_at: { $gt: new Date() },
+      },
+      {
+        $set: {
+          used_at: new Date(),
+          used_by_queue_id: queue._id,
+        },
+      },
+      { new: true },
+    );
+    if (!claimedQr) {
+      const existingQr = await this.shopQrTokenModel
+        .findOne({ token: qrCode, shop_id: queue.shop_id })
+        .select('used_at expires_at')
+        .lean();
+      if (existingQr?.used_at) {
+        throw new ConflictException(
+          'This QR code has already been used. Ask staff to generate a new QR code.',
+        );
+      }
+      throw new BadRequestException(
+        'This QR code is invalid or expired. Ask staff to generate a new QR code.',
+      );
+    }
+
+    try {
+      queue.queue_qr = qrCode;
+      queue.status = 'qr-scanned';
+      queue.estimated_wait_time = 0;
+      queue.readyAt = null;
+      queue.noShowDeadline = null;
+      await queue.save();
+    } catch (error) {
+      await this.shopQrTokenModel.updateOne(
+        { _id: claimedQr._id, used_by_queue_id: queue._id.toString() },
+        { $set: { used_at: null, used_by_queue_id: null } },
+      );
+      throw error;
+    }
     await this.queueNotifications.createAndSend({
       customerId: queue.customer_id.toString(),
       queueId: queue._id.toString(),
@@ -246,6 +330,18 @@ export class QueuesService {
         if (!queue) throw new NotFoundException('Queue not found or no longer active');
         if (queue.status !== 'qr-scanned' || !queue.queue_qr) {
           throw new BadRequestException('Customer must complete QR check-in before seat assignment');
+        }
+        if (String(queue.table_type_id) !== String(table_type_id)) {
+          throw new BadRequestException(
+            'Selected table type must match the customer requested seat type',
+          );
+        }
+        const validTableType = await this.tableTypesModel
+          .findOne({ _id: table_type_id, shopId: shop_id })
+          .session(session)
+          .lean();
+        if (!validTableType) {
+          throw new BadRequestException('Table type does not belong to this shop');
         }
 
         const occupied = await this.tableStatusModel

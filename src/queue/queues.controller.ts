@@ -63,6 +63,19 @@ export class QueuesController {
     };
   }
 
+  @Post('shop-qr')
+  async createShopQr(@Body() body: { shop_id: string }) {
+    return {
+      data: await this.queuesService.createShopQr(body.shop_id),
+      message: 'Fresh shop QR generated',
+    };
+  }
+
+  @Get('shop-qr/:token/status')
+  async getShopQrStatus(@Param('token') token: string) {
+    return { data: await this.queuesService.getShopQrStatus(token) };
+  }
+
   @Patch('assign-table')
   async assignTable(@Body() assignTableData: AssignTableDto) {
     const queue = await this.queuesService.assignTable(assignTableData);

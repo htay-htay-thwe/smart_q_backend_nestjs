@@ -16,6 +16,7 @@ import { QueueGateway } from './queue.gateway';
 import { QueueNotificationService } from './queue-notification.service';
 import { Notification, NotificationSchema } from '../schemas/Notification.schema';
 import { NotificationsController } from './notifications.controller';
+import { ShopQrToken, ShopQrTokenSchema } from '../schemas/ShopQrToken.schema';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { NotificationsController } from './notifications.controller';
       { name: QueueHistory.name, schema: QueueHistorySchema },
       { name: Customers.name, schema: CustomersSchema },
       { name: Notification.name, schema: NotificationSchema },
+      { name: ShopQrToken.name, schema: ShopQrTokenSchema },
     ]),
   ],
   controllers: [QueuesController, NotificationsController],
