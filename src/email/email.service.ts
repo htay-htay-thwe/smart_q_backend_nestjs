@@ -1,44 +1,44 @@
 import { Injectable } from '@nestjs/common';
-import { BrevoClient } from '@getbrevo/brevo';
+import nodemailer, { Transporter } from 'nodemailer';
 
 @Injectable()
 export class EmailService {
-  private readonly brevo: BrevoClient;
+  private readonly transporter: Transporter;
+  private readonly sender: string;
 
   constructor() {
-    const apiKey = process.env.BREVO_API_KEY;
-    if (!apiKey) {
-      throw new Error('BREVO_API_KEY is not configured');
+    const user = process.env.GMAIL_USER;
+    const appPassword = process.env.GMAIL_APP_PASSWORD;
+    if (!user || !appPassword) {
+      throw new Error(
+        'GMAIL_USER and GMAIL_APP_PASSWORD are not configured',
+      );
     }
-    this.brevo = new BrevoClient({ apiKey, maxRetries: 2 });
+    const senderName = process.env.GMAIL_FROM_NAME?.trim() || 'SmartQ';
+    this.sender = `${senderName} <${user}>`;
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass: appPassword },
+    });
   }
 
   async sendVerificationCode(email: string, otp: string) {
-    const from = process.env.BREVO_FROM_EMAIL;
-    if (!from) {
-      throw new Error('BREVO_FROM_EMAIL is not configured');
-    }
-    const match = from.match(/^(.*?)\s*<([^>]+)>$/);
-    const sender = match
-      ? { name: match[1].trim(), email: match[2].trim() }
-      : { email: from.trim() };
-
     try {
-      const data = await this.brevo.transactionalEmails.sendTransacEmail({
-        to: [{ email }],
-        sender,
+      const data = await this.transporter.sendMail({
+        from: this.sender,
+        to: email,
         subject: 'Email Verification Code - SmartQ',
-        textContent: `Your verification code is: ${otp}`,
-        htmlContent: `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
+        text: `Your verification code is: ${otp}`,
+        html: `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
       });
-      if (!data?.messageId) {
-        console.error('Brevo Error: No message ID returned');
+      if (!data.messageId) {
+        console.error('Gmail SMTP Error: No message ID returned');
         return false;
       }
       console.log(`Email sent successfully: ${data.messageId}`);
       return true;
     } catch (error) {
-      console.error('Brevo Error:', error);
+      console.error('Gmail SMTP Error:', error);
       return false;
     }
   }
