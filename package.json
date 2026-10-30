@@ -31,7 +31,6 @@
     "@nestjs/platform-socket.io": "^11.1.14",
     "@nestjs/schedule": "^6.1.1",
     "@nestjs/websockets": "^11.1.14",
-    "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
     "cache-manager": "^7.2.8",
     "cache-manager-ioredis": "^2.1.0",
@@ -48,6 +47,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.35.0",
     "rxjs": "^7.8.1",
     "twilio": "^5.12.2",
     "uuid": "^13.0.0"

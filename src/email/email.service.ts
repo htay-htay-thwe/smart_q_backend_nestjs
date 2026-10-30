@@ -1,29 +1,40 @@
 import { Injectable } from '@nestjs/common';
+import { Resend } from 'resend';
 
 @Injectable()
 export class EmailService {
-  private sgMail;
+  private readonly resend: Resend;
 
   constructor() {
-    this.sgMail = require('@sendgrid/mail');
-    this.sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY is not configured');
+    }
+    this.resend = new Resend(apiKey);
   }
 
   async sendVerificationCode(email: string, otp: string) {
-    const msg = {
-      to: email,
-      from: process.env.SENDGRID_SENDER_EMAIL,
-      subject: 'Email Verification Code - SmartQ',
-      text: `Your verification code is: ${otp}`,
-      html: `<strong>Your verification code is: <h1>${otp}</h1></strong>`,
-    };
+    const from = process.env.RESEND_FROM_EMAIL;
+    if (!from) {
+      throw new Error('RESEND_FROM_EMAIL is not configured');
+    }
 
     try {
-      await this.sgMail.send(msg);
-      console.log('Email sent successfully');
+      const { data, error } = await this.resend.emails.send({
+        to: [email],
+        from,
+        subject: 'Email Verification Code - SmartQ',
+        text: `Your verification code is: ${otp}`,
+        html: `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
+      });
+      if (error || !data?.id) {
+        console.error('Resend Error:', error ?? 'No message ID returned');
+        return false;
+      }
+      console.log(`Email sent successfully: ${data.id}`);
       return true;
     } catch (error) {
-      console.error('SendGrid Error:', error.response?.body || error);
+      console.error('Resend Error:', error);
       return false;
     }
   }
