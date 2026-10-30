@@ -1,40 +1,44 @@
 import { Injectable } from '@nestjs/common';
-import { Resend } from 'resend';
+import { BrevoClient } from '@getbrevo/brevo';
 
 @Injectable()
 export class EmailService {
-  private readonly resend: Resend;
+  private readonly brevo: BrevoClient;
 
   constructor() {
-    const apiKey = process.env.RESEND_API_KEY;
+    const apiKey = process.env.BREVO_API_KEY;
     if (!apiKey) {
-      throw new Error('RESEND_API_KEY is not configured');
+      throw new Error('BREVO_API_KEY is not configured');
     }
-    this.resend = new Resend(apiKey);
+    this.brevo = new BrevoClient({ apiKey, maxRetries: 2 });
   }
 
   async sendVerificationCode(email: string, otp: string) {
-    const from = process.env.RESEND_FROM_EMAIL;
+    const from = process.env.BREVO_FROM_EMAIL;
     if (!from) {
-      throw new Error('RESEND_FROM_EMAIL is not configured');
+      throw new Error('BREVO_FROM_EMAIL is not configured');
     }
+    const match = from.match(/^(.*?)\s*<([^>]+)>$/);
+    const sender = match
+      ? { name: match[1].trim(), email: match[2].trim() }
+      : { email: from.trim() };
 
     try {
-      const { data, error } = await this.resend.emails.send({
-        to: [email],
-        from,
+      const data = await this.brevo.transactionalEmails.sendTransacEmail({
+        to: [{ email }],
+        sender,
         subject: 'Email Verification Code - SmartQ',
-        text: `Your verification code is: ${otp}`,
-        html: `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
+        textContent: `Your verification code is: ${otp}`,
+        htmlContent: `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
       });
-      if (error || !data?.id) {
-        console.error('Resend Error:', error ?? 'No message ID returned');
+      if (!data?.messageId) {
+        console.error('Brevo Error: No message ID returned');
         return false;
       }
-      console.log(`Email sent successfully: ${data.id}`);
+      console.log(`Email sent successfully: ${data.messageId}`);
       return true;
     } catch (error) {
-      console.error('Resend Error:', error);
+      console.error('Brevo Error:', error);
       return false;
     }
   }

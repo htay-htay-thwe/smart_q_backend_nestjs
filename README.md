@@ -82,7 +82,7 @@ The backend exposes REST endpoints for all CRUD operations and a Socket.IO gatew
 | Technology | Purpose |
 |---|---|
 | Firebase Admin SDK | FCM push notifications to customer mobile devices |
-| Resend | Transactional OTP emails |
+| Brevo | Transactional OTP emails |
 | Twilio | SMS OTP delivery |
 | Cloudinary | Cloud image upload and storage |
 
@@ -231,9 +231,9 @@ CLOUD_NAME=
 CLOUD_API_KEY=
 CLOUD_API_SECRET=
 
-# Resend (email OTP)
-RESEND_API_KEY=
-RESEND_FROM_EMAIL=
+# Brevo (email OTP)
+BREVO_API_KEY=
+BREVO_FROM_EMAIL=
 
 # Twilio (SMS OTP)
 TWILIO_ACCOUNT_SID=
