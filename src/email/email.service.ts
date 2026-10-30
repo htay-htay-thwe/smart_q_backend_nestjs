@@ -1,72 +1,51 @@
 import { Injectable } from '@nestjs/common';
-import { OAuth2Client } from 'google-auth-library';
+import sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class EmailService {
-  private readonly oauthClient: OAuth2Client;
-  private readonly user: string;
-  private readonly senderName: string;
+  private readonly sender: string;
 
   constructor() {
-    const user = process.env.GMAIL_USER;
-    const clientId = process.env.GMAIL_CLIENT_ID;
-    const clientSecret = process.env.GMAIL_CLIENT_SECRET;
-    const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
-    if (!user || !clientId || !clientSecret || !refreshToken) {
+    const apiKey = process.env.SENDGRID_API_KEY;
+    const senderEmail = process.env.SENDGRID_SENDER_EMAIL;
+    if (!apiKey || !senderEmail) {
       throw new Error(
-        'GMAIL_USER, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, and GMAIL_REFRESH_TOKEN are not configured',
+        'SENDGRID_API_KEY and SENDGRID_SENDER_EMAIL are not configured',
       );
     }
-    this.user = user;
-    this.senderName = process.env.GMAIL_FROM_NAME?.trim() || 'Smartqueue';
-    this.oauthClient = new OAuth2Client(clientId, clientSecret);
-    this.oauthClient.setCredentials({ refresh_token: refreshToken });
+    sgMail.setApiKey(apiKey);
+    this.sender = senderEmail;
   }
 
   async sendVerificationCode(email: string, otp: string) {
     try {
-      const accessToken = await this.oauthClient.getAccessToken();
-      if (!accessToken.token) {
-        throw new Error('Google OAuth access token was not returned');
-      }
-      const rawMessage = [
-        `From: ${this.senderName} <${this.user}>`,
-        `To: ${email}`,
-        'Subject: Email Verification Code - SmartQ',
-        'MIME-Version: 1.0',
-        'Content-Type: text/html; charset=UTF-8',
-        '',
-        `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
-      ].join('\r\n');
-      const encodedMessage = Buffer.from(rawMessage)
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-      const response = await fetch(
-        'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ raw: encodedMessage }),
-        },
-      );
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(`Gmail API ${response.status}: ${detail}`);
-      }
-      const data = (await response.json()) as { id?: string };
-      if (!data.id) {
-        console.error('Gmail API Error: No message ID returned');
+      const [response] = await sgMail.send({
+        to: email,
+        from: this.sender,
+        subject: 'Email Verification Code - SmartQ',
+        text: `Your verification code is: ${otp}`,
+        html: `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
+      });
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        console.error('SendGrid Error: unexpected response status', {
+          statusCode: response.statusCode,
+        });
         return false;
       }
-      console.log(`Email sent successfully: ${data.id}`);
+      console.log('Email sent successfully through SendGrid');
       return true;
     } catch (error) {
-      console.error('Gmail API Error:', error);
+      const sendGridError = error as {
+        code?: number | string;
+        message?: string;
+        response?: { statusCode?: number; body?: unknown };
+      };
+      console.error('SendGrid Error:', {
+        code: sendGridError?.code,
+        message: sendGridError?.message,
+        statusCode: sendGridError?.response?.statusCode,
+        body: sendGridError?.response?.body,
+      });
       return false;
     }
   }

@@ -82,7 +82,7 @@ The backend exposes REST endpoints for all CRUD operations and a Socket.IO gatew
 | Technology | Purpose |
 |---|---|
 | Firebase Admin SDK | FCM push notifications to customer mobile devices |
-| Gmail API OAuth2 | Transactional OTP emails |
+| SendGrid | Transactional OTP emails |
 | Twilio | SMS OTP delivery |
 | Cloudinary | Cloud image upload and storage |
 
@@ -231,12 +231,9 @@ CLOUD_NAME=
 CLOUD_API_KEY=
 CLOUD_API_SECRET=
 
-# Gmail API OAuth2 (email OTP)
-GMAIL_USER=
-GMAIL_CLIENT_ID=
-GMAIL_CLIENT_SECRET=
-GMAIL_REFRESH_TOKEN=
-GMAIL_FROM_NAME=Smartqueue
+# SendGrid (email OTP)
+SENDGRID_API_KEY=
+SENDGRID_SENDER_EMAIL=
 
 # Twilio (SMS OTP)
 TWILIO_ACCOUNT_SID=

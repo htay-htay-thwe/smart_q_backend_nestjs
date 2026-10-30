@@ -40,25 +40,31 @@ export class OtpService {
       isVerified: false,
       type: 'phone',
     });
-    // TODO: Integrate with SMS service (Twilio, AWS SNS, etc.)
-    // const res = await this.smsService.sendSms(
-    //   phoneNumber,
-    //   `Your verification code is: ${otp}`,
-    // );
-    // if (!res) {
-    //   return {
-    //     success: false,
-    //     message: 'Failed to send OTP SMS',
-    //   };
-    // } else {
-    //   return {
-    //     success: true,
-    //     message: `OTP sent to ${phoneNumber}`,
-    //   };
-    return {
-      success: true,
-      message: `OTP sent to ${phoneNumber} - ${otp}`,
-    };
+    try {
+      await this.smsService.sendSms(
+        phoneNumber,
+        `Your SmartQ verification code is: ${otp}`,
+      );
+      return {
+        success: true,
+        message: 'OTP sent successfully',
+      };
+    } catch (error) {
+      await this.otpModel.deleteOne({
+        phoneNumber,
+        otp,
+        type: 'phone',
+        isVerified: false,
+      });
+      console.error('Twilio OTP error:', {
+        code: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return {
+        success: false,
+        message: 'Failed to send OTP SMS',
+      };
+    }
   }
 
   async sendOtpToEmail(
