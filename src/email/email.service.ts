@@ -17,8 +17,13 @@ export class EmailService {
     const senderName = process.env.GMAIL_FROM_NAME?.trim() || 'SmartQ';
     this.sender = `${senderName} <${user}>`;
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: { user, pass: appPassword },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
   }
 
