@@ -1,50 +1,59 @@
 import { Injectable } from '@nestjs/common';
-import sgMail from '@sendgrid/mail';
+import nodemailer, { Transporter } from 'nodemailer';
 
 @Injectable()
 export class EmailService {
+  private readonly transporter: Transporter;
   private readonly sender: string;
 
   constructor() {
-    const apiKey = process.env.SENDGRID_API_KEY;
-    const senderEmail = process.env.SENDGRID_SENDER_EMAIL;
-    if (!apiKey || !senderEmail) {
+    const user = process.env.GMAIL_USER;
+    const appPassword = process.env.GMAIL_APP_PASSWORD;
+    if (!user || !appPassword) {
       throw new Error(
-        'SENDGRID_API_KEY and SENDGRID_SENDER_EMAIL are not configured',
+        'GMAIL_USER and GMAIL_APP_PASSWORD are not configured',
       );
     }
-    sgMail.setApiKey(apiKey);
-    this.sender = senderEmail;
+
+    this.sender = user;
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user,
+        pass: appPassword,
+      },
+      requireTLS: true,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
+    });
   }
 
   async sendVerificationCode(email: string, otp: string) {
     try {
-      const [response] = await sgMail.send({
-        to: email,
+      await this.transporter.sendMail({
         from: this.sender,
+        to: email,
         subject: 'Email Verification Code - SmartQ',
         text: `Your verification code is: ${otp}`,
         html: `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
       });
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        console.error('SendGrid Error: unexpected response status', {
-          statusCode: response.statusCode,
-        });
-        return false;
-      }
-      console.log('Email sent successfully through SendGrid');
+      console.log('Email sent successfully through Gmail SMTP');
       return true;
     } catch (error) {
-      const sendGridError = error as {
-        code?: number | string;
+      const smtpError = error as {
+        code?: string;
+        command?: string;
+        responseCode?: number;
         message?: string;
-        response?: { statusCode?: number; body?: unknown };
       };
-      console.error('SendGrid Error:', {
-        code: sendGridError?.code,
-        message: sendGridError?.message,
-        statusCode: sendGridError?.response?.statusCode,
-        body: sendGridError?.response?.body,
+      console.error('Gmail SMTP Error:', {
+        code: smtpError?.code,
+        command: smtpError?.command,
+        responseCode: smtpError?.responseCode,
+        message: smtpError?.message,
       });
       return false;
     }
