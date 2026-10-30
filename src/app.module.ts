@@ -11,6 +11,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { FirebaseModule } from './firebase/firebase.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-ioredis';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -44,6 +45,6 @@ import * as redisStore from 'cache-manager-ioredis';
       inject: [ConfigService],
     }),
   ],
-  controllers: [],
+  controllers: [AppController],
 })
 export class AppModule {}
