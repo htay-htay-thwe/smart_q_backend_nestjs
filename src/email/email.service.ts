@@ -1,65 +1,72 @@
 import { Injectable } from '@nestjs/common';
-import nodemailer, { Transporter } from 'nodemailer';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class EmailService {
-  private readonly transporter: Transporter;
-  private readonly sender: string;
+  private readonly oauthClient: OAuth2Client;
+  private readonly user: string;
+  private readonly senderName: string;
 
   constructor() {
     const user = process.env.GMAIL_USER;
-    const appPassword = process.env.GMAIL_APP_PASSWORD;
-    if (!user || !appPassword) {
+    const clientId = process.env.GMAIL_CLIENT_ID;
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+    const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+    if (!user || !clientId || !clientSecret || !refreshToken) {
       throw new Error(
-        'GMAIL_USER and GMAIL_APP_PASSWORD are not configured',
+        'GMAIL_USER, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, and GMAIL_REFRESH_TOKEN are not configured',
       );
     }
-    const senderName = process.env.GMAIL_FROM_NAME?.trim() || 'SmartQ';
-    this.sender = `${senderName} <${user}>`;
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      auth: { user, pass: appPassword },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-    });
+    this.user = user;
+    this.senderName = process.env.GMAIL_FROM_NAME?.trim() || 'Smartqueue';
+    this.oauthClient = new OAuth2Client(clientId, clientSecret);
+    this.oauthClient.setCredentials({ refresh_token: refreshToken });
   }
 
   async sendVerificationCode(email: string, otp: string) {
     try {
-      const data = await this.transporter.sendMail({
-        from: this.sender,
-        to: email,
-        subject: 'Email Verification Code - SmartQ',
-        text: `Your verification code is: ${otp}`,
-        html: `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
-      });
-      if (!data.messageId) {
-        console.error('Gmail SMTP Error: No message ID returned');
+      const accessToken = await this.oauthClient.getAccessToken();
+      if (!accessToken.token) {
+        throw new Error('Google OAuth access token was not returned');
+      }
+      const rawMessage = [
+        `From: ${this.senderName} <${this.user}>`,
+        `To: ${email}`,
+        'Subject: Email Verification Code - SmartQ',
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=UTF-8',
+        '',
+        `<strong>Your verification code is:</strong><h1>${otp}</h1>`,
+      ].join('\r\n');
+      const encodedMessage = Buffer.from(rawMessage)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+      const response = await fetch(
+        'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ raw: encodedMessage }),
+        },
+      );
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(`Gmail API ${response.status}: ${detail}`);
+      }
+      const data = (await response.json()) as { id?: string };
+      if (!data.id) {
+        console.error('Gmail API Error: No message ID returned');
         return false;
       }
-      console.log(`Email sent successfully: ${data.messageId}`);
+      console.log(`Email sent successfully: ${data.id}`);
       return true;
     } catch (error) {
-      const smtpError = error as {
-        name?: string;
-        message?: string;
-        code?: string;
-        responseCode?: number;
-        response?: string;
-        command?: string;
-      };
-      console.error('Gmail SMTP Error:', {
-        name: smtpError?.name,
-        message: smtpError?.message,
-        code: smtpError?.code,
-        responseCode: smtpError?.responseCode,
-        response: smtpError?.response,
-        command: smtpError?.command,
-      });
+      console.error('Gmail API Error:', error);
       return false;
     }
   }
