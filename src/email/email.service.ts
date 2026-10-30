@@ -18,8 +18,9 @@ export class EmailService {
     this.sender = `${senderName} <${user}>`;
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
+      requireTLS: true,
       auth: { user, pass: appPassword },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
