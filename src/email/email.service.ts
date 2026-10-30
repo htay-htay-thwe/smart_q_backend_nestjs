@@ -43,7 +43,22 @@ export class EmailService {
       console.log(`Email sent successfully: ${data.messageId}`);
       return true;
     } catch (error) {
-      console.error('Gmail SMTP Error:', error);
+      const smtpError = error as {
+        name?: string;
+        message?: string;
+        code?: string;
+        responseCode?: number;
+        response?: string;
+        command?: string;
+      };
+      console.error('Gmail SMTP Error:', {
+        name: smtpError?.name,
+        message: smtpError?.message,
+        code: smtpError?.code,
+        responseCode: smtpError?.responseCode,
+        response: smtpError?.response,
+        command: smtpError?.command,
+      });
       return false;
     }
   }
