@@ -20,7 +20,9 @@ import { ShopQrToken } from '../schemas/ShopQrToken.schema';
 
 @Injectable()
 export class QueuesService {
-  private readonly AVERAGE_SERVICE_TIME = 60; // 30 minutes per customer
+  private readonly DEFAULT_SERVICE_TIME = 30;
+  private readonly MIN_SERVICE_TIME = 5;
+  private readonly MAX_SERVICE_TIME = 180;
 
   constructor(
     @InjectModel(Queues.name) private queuesModel: Model<Queues>,
@@ -70,6 +72,49 @@ export class QueuesService {
       .lean();
     if (!qr) throw new NotFoundException('QR code not found or expired');
     return { used: Boolean(qr.used_at), expires_at: qr.expires_at };
+  }
+
+  private async getServiceTimeMinutes(shopId: string, tableTypeId: string) {
+    const history = await this.queueHistoryModel
+      .find({ shop_id: shopId, table_type_id: tableTypeId })
+      .sort({ completedAt: -1 })
+      .limit(50)
+      .select('createdAt completedAt')
+      .lean();
+
+    const durations = history
+      .map((item: any) => {
+        const startedAt = new Date(item.createdAt).getTime();
+        const completedAt = new Date(item.completedAt).getTime();
+        return (completedAt - startedAt) / 60_000;
+      })
+      .filter(
+        (minutes) =>
+          Number.isFinite(minutes) &&
+          minutes >= this.MIN_SERVICE_TIME &&
+          minutes <= this.MAX_SERVICE_TIME,
+      )
+      .sort((left, right) => left - right);
+
+    if (!durations.length) return this.DEFAULT_SERVICE_TIME;
+    const middle = Math.floor(durations.length / 2);
+    return Math.round(
+      durations.length % 2
+        ? durations[middle]
+        : (durations[middle - 1] + durations[middle]) / 2,
+    );
+  }
+
+  private getWaitRange(position: number, tables: number, serviceMinutes: number) {
+    const wait = Math.max(
+      0,
+      Math.ceil(position / Math.max(1, tables)) * serviceMinutes,
+    );
+    return {
+      wait,
+      min: Math.max(1, Math.round(wait * 0.8)),
+      max: Math.max(wait, Math.round(wait * 1.2)),
+    };
   }
 
   async createQueue(queueData: queueData) {
@@ -128,6 +173,8 @@ export class QueuesService {
       occupiedTables < totalTables && occupiedTblAtQueue < totalTables;
 
     let estimatedWaitTime = 0;
+    let estimatedWaitMin = 0;
+    let estimatedWaitMax = 0;
     let queueNumber = 0;
     let status = 'Ready to seat';
     const readyAt = status === 'Ready to seat' ? new Date() : null;
@@ -142,9 +189,14 @@ export class QueuesService {
 
       // The new position in the queue (including this customer)
       const position = waitingAhead + 1;
-      // Use totalTables as tableCount
-      estimatedWaitTime =
-        Math.ceil(position / totalTables) * this.AVERAGE_SERVICE_TIME;
+      const serviceTime = await this.getServiceTimeMinutes(
+        queueData.shop_id.toString(),
+        queueData.table_type_id.toString(),
+      );
+      const estimate = this.getWaitRange(position, totalTables, serviceTime);
+      estimatedWaitTime = estimate.wait;
+      estimatedWaitMin = estimate.min;
+      estimatedWaitMax = estimate.max;
       status = 'waiting';
 
       const lastQueue = await this.queuesModel
@@ -167,6 +219,8 @@ export class QueuesService {
       queue_qr: null,
       status,
       estimated_wait_time: estimatedWaitTime,
+      estimated_wait_min: estimatedWaitMin,
+      estimated_wait_max: estimatedWaitMax,
       notification_sent: false,
       userRequirements: queueData.userRequirements || '',
       readyAt,
@@ -189,9 +243,14 @@ export class QueuesService {
       type: 'QUEUE_JOINED',
       title: 'Queue joined',
       message: estimatedWaitTime > 0
-        ? `Estimated wait at ${shop?.name ?? 'the shop'} is about ${estimatedWaitTime} minutes.`
+        ? `Estimated wait at ${shop?.name ?? 'the shop'} is about ${estimatedWaitMin}-${estimatedWaitMax} minutes.`
         : `A table is available at ${shop?.name ?? 'the shop'}. Please proceed to check in.`,
-      data: { estimated_wait_minutes: String(estimatedWaitTime), status },
+      data: {
+        estimated_wait_minutes: String(estimatedWaitTime),
+        estimated_wait_min: String(estimatedWaitMin),
+        estimated_wait_max: String(estimatedWaitMax),
+        status,
+      },
     });
     return savedQueue;
   }
@@ -441,6 +500,8 @@ export class QueuesService {
         {
           status: 'Ready to seat',
           estimated_wait_time: 0,
+          estimated_wait_min: 0,
+          estimated_wait_max: 0,
           readyAt: new Date(),
           noShowDeadline: new Date(Date.now() + 15 * 60_000),
         },
@@ -487,15 +548,20 @@ export class QueuesService {
         .lean()
         .then((doc) => doc?.capacity ?? 1);
 
-      const AVERAGE_SERVICE_TIME = 60;
+      const serviceTime = await this.getServiceTimeMinutes(
+        shop_id.toString(),
+        table_type_id.toString(),
+      );
       for (let i = 0; i < remainingWaiting.length; i++) {
         const position = i + 1;
-        const newWaitTime =
-          Math.ceil(position / totalTables) * AVERAGE_SERVICE_TIME;
+        const estimate = this.getWaitRange(position, totalTables, serviceTime);
+        const newWaitTime = estimate.wait;
         await this.queuesModel.updateOne(
           { _id: remainingWaiting[i]._id },
           {
             estimated_wait_time: newWaitTime,
+            estimated_wait_min: estimate.min,
+            estimated_wait_max: estimate.max,
             // Reset notification flags so updated thresholds can re-fire
             notified_20min: false,
             notified_10min: false,
@@ -520,8 +586,12 @@ export class QueuesService {
             queueId: remainingWaiting[i]._id.toString(),
             type: 'WAIT_ESTIMATE_CHANGED',
             title: 'Wait time updated',
-            message: `Your estimated wait is now about ${newWaitTime} minutes.`,
-            data: { estimated_wait_minutes: String(newWaitTime) },
+            message: `Your estimated wait is now about ${estimate.min}-${estimate.max} minutes.`,
+            data: {
+              estimated_wait_minutes: String(newWaitTime),
+              estimated_wait_min: String(estimate.min),
+              estimated_wait_max: String(estimate.max),
+            },
           });
         }
       }

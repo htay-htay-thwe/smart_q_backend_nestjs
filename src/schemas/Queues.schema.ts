@@ -24,6 +24,12 @@ export class Queues {
   @Prop({ required: false, default: 0 })
   estimated_wait_time: number;
 
+  @Prop({ required: false, default: 0 })
+  estimated_wait_min: number;
+
+  @Prop({ required: false, default: 0 })
+  estimated_wait_max: number;
+
   @Prop({ required: false, default: false })
   notification_sent: boolean;
 
