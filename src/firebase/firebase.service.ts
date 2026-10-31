@@ -7,9 +7,24 @@ export class FirebaseService implements OnModuleInit {
 
   onModuleInit() {
     if (!admin.apps.length) {
-      const projectId = process.env.FIREBASE_PROJECT_ID;
-      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(
+      let serviceAccount: {
+        projectId?: string;
+        project_id?: string;
+        clientEmail?: string;
+        client_email?: string;
+        privateKey?: string;
+        private_key?: string;
+      } = {};
+      if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+        try {
+          serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+        } catch {
+          this.logger.error('FIREBASE_SERVICE_ACCOUNT_JSON is not valid JSON');
+        }
+      }
+      const projectId = serviceAccount.projectId ?? serviceAccount.project_id ?? process.env.FIREBASE_PROJECT_ID;
+      const clientEmail = serviceAccount.clientEmail ?? serviceAccount.client_email ?? process.env.FIREBASE_CLIENT_EMAIL;
+      const privateKey = (serviceAccount.privateKey ?? serviceAccount.private_key ?? process.env.FIREBASE_PRIVATE_KEY)?.replace(
         /\\n/g,
         '\n',
       );
