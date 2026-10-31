@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class queueData {
   @IsString()
@@ -16,4 +16,9 @@ export class queueData {
   @IsString()
   @IsNotEmpty()
   customer_id: string;
+
+  @IsInt()
+  @Min(1)
+  @IsNotEmpty()
+  partySize: number;
 }

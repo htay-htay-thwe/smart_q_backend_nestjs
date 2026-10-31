@@ -9,6 +9,9 @@ export class Queues {
   @Prop({ required: true })
   table_type_id: string;
 
+  @Prop({ required: true, min: 1 })
+  partySize: number;
+
   @Prop({ required: false, default: null })
   table_no: string;
 
