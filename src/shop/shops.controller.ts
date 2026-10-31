@@ -41,12 +41,16 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CacheInterceptor } from '@nestjs/cache-manager/dist/interceptors/cache.interceptor';
 import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Queues } from '../schemas/Queues.schema';
 
 @Controller('api/shops')
 export class ShopsController {
   constructor(
     private shopsService: ShopsService,
     private otpService: OtpService,
+    @InjectModel(Queues.name) private queuesModel: Model<Queues>,
   ) {}
 
   @Post('register')
@@ -106,7 +110,17 @@ export class ShopsController {
   @CacheTTL(30)
   @Get('all')
   async findAll() {
-    return { data: await this.shopsService.findAll() };
+    const shops = await this.shopsService.findAll();
+    const data = await Promise.all(
+      shops.map(async (shop) => ({
+        ...shop.toObject(),
+        activeQueueCount: await this.queuesModel.countDocuments({
+          shop_id: shop._id.toString(),
+          status: 'waiting',
+        }),
+      })),
+    );
+    return { data };
   }
 
   @Post('send-email-otp')

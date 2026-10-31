@@ -20,6 +20,7 @@ import { PhoneModule } from '../phone/phone.module';
 import { CacheInterceptor } from '@nestjs/cache-manager/dist/interceptors/cache.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core/constants';
 import { CacheModule } from '@nestjs/cache-manager/dist/cache.module';
+import { Queues, QueueSchema } from '../schemas/Queues.schema';
 
 @Module({
   imports: [
@@ -43,6 +44,10 @@ import { CacheModule } from '@nestjs/cache-manager/dist/cache.module';
       {
         name: QueueHistory.name,
         schema: QueueHistorySchema,
+      },
+      {
+        name: Queues.name,
+        schema: QueueSchema,
       },
     ]),
     AuthModule,
