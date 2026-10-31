@@ -667,6 +667,48 @@ export class QueuesService {
       message: `Queue #${queue.queue_number} has been cancelled.`,
       data: { status: 'cancelled' },
     });
+
+    const remainingWaiting = await this.queuesModel
+      .find({
+        shop_id: queue.shop_id,
+        table_type_id: queue.table_type_id,
+        status: 'waiting',
+      })
+      .sort({ queue_number: 1 })
+      .lean();
+    const totalTables = await this.tableTypesModel
+      .findById(queue.table_type_id)
+      .select('capacity')
+      .lean()
+      .then((doc) => doc?.capacity ?? 1);
+    const serviceTime = await this.getServiceTimeMinutes(
+      queue.shop_id.toString(),
+      queue.table_type_id.toString(),
+    );
+
+    await Promise.all(
+      remainingWaiting.map(async (waitingQueue, index) => {
+        const estimate = this.getWaitRange(index + 1, totalTables, serviceTime);
+        await this.queuesModel.updateOne(
+          { _id: waitingQueue._id },
+          {
+            estimated_wait_time: estimate.wait,
+            estimated_wait_min: estimate.min,
+            estimated_wait_max: estimate.max,
+          },
+        );
+      }),
+    );
+
+    const tableType = await this.tableTypesModel
+      .findById(queue.table_type_id)
+      .select('type')
+      .lean();
+    this.queueGateway.notifyQueueUpdate(queue.shop_id.toString(), {
+      table_type_id: queue.table_type_id,
+      table_type_name: tableType?.type ?? null,
+    });
+
     return queue;
   }
 }
