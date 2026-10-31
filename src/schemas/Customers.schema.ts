@@ -5,10 +5,10 @@ export class Customers {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ unique: true, sparse: true })
+  @Prop({ required: false })
   email?: string;
 
-  @Prop({ unique: true, sparse: true })
+  @Prop({ required: false })
   phoneNumber?: string;
 
   @Prop({ required: false, select: false })
@@ -33,3 +33,20 @@ export class Customers {
 }
 
 export const CustomersSchema = SchemaFactory.createForClass(Customers);
+
+CustomersSchema.index(
+  { email: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { email: { $type: 'string' } },
+    name: 'email_unique',
+  },
+);
+CustomersSchema.index(
+  { phoneNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { phoneNumber: { $type: 'string' } },
+    name: 'phoneNumber_unique',
+  },
+);

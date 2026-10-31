@@ -5,6 +5,7 @@ import {
   BadRequestException,
   NotFoundException,
   UnauthorizedException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Customers } from '../schemas/Customers.schema';
@@ -18,7 +19,7 @@ import { CustomerLoginDto } from './dtos/CustomerLogin.dto';
 import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
-export class CustomersService {
+export class CustomersService implements OnModuleInit {
   private readonly googleClient = new OAuth2Client();
   constructor(
     @InjectModel(Customers.name) private customersModel: Model<Customers>,
@@ -26,6 +27,33 @@ export class CustomersService {
     private otpService: OtpService,
     private cloudinaryService: CloudinaryService,
   ) {}
+
+  async onModuleInit() {
+    const indexes = await this.customersModel.collection.indexes();
+    for (const legacyIndexName of ['phoneNumber_1', 'email_1']) {
+      if (indexes.some((index) => index.name === legacyIndexName)) {
+        await this.customersModel.collection.dropIndex(legacyIndexName);
+        console.log(`Removed legacy ${legacyIndexName} index`);
+      }
+    }
+
+    await this.customersModel.collection.createIndex(
+      { phoneNumber: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { phoneNumber: { $type: 'string' } },
+        name: 'phoneNumber_unique',
+      },
+    );
+    await this.customersModel.collection.createIndex(
+      { email: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { email: { $type: 'string' } },
+        name: 'email_unique',
+      },
+    );
+  }
 
   async authenticateWithGoogle(idToken: string) {
     const audiences = [process.env.GOOGLE_WEB_CLIENT_ID].filter(
@@ -151,14 +179,15 @@ export class CustomersService {
       profileImageUrl = await this.cloudinaryService.uploadImage(file);
     }
 
-    const newCustomer = new this.customersModel({
+    const customerData = {
       name: userData.name,
-      email: userData.email || null,
-      phoneNumber: userData.phoneNumber || null,
       password: await bcrypt.hash(userData.password, 10),
-      profileImg: profileImageUrl || null,
       isVerified: true,
-    });
+      ...(userData.email ? { email: userData.email } : {}),
+      ...(userData.phoneNumber ? { phoneNumber: userData.phoneNumber } : {}),
+      ...(profileImageUrl ? { profileImg: profileImageUrl } : {}),
+    };
+    const newCustomer = new this.customersModel(customerData);
 
     const savedCustomer = await newCustomer.save();
 
