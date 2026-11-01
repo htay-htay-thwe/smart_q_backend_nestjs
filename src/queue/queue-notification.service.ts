@@ -95,12 +95,16 @@ export class QueueNotificationService {
     });
   }
 
-  markRead(customerId: string, notificationId: string) {
-    return this.notificationsModel.findOneAndUpdate(
+  async markRead(customerId: string, notificationId: string) {
+    const notification = await this.notificationsModel.findOneAndUpdate(
       { _id: notificationId, customer_id: customerId, deletedAt: null },
       { isRead: true },
       { new: true },
     );
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+    return notification;
   }
 
   async markAllRead(customerId: string) {
