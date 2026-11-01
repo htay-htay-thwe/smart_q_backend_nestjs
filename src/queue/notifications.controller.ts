@@ -33,13 +33,13 @@ export class NotificationsController {
     return { data: await this.notifications.markRead(this.customerId(request), id) };
   }
 
+  @Delete('all')
+  async removeAll(@Req() request: any) {
+    return { data: await this.notifications.removeAll(this.customerId(request)) };
+  }
+
   @Delete(':id')
   async remove(@Req() request: any, @Param('id') id: string) {
     return { data: await this.notifications.remove(this.customerId(request), id) };
-  }
-
-  @Delete()
-  async removeAll(@Req() request: any) {
-    return { data: await this.notifications.removeAll(this.customerId(request)) };
   }
 }
