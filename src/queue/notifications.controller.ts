@@ -37,4 +37,9 @@ export class NotificationsController {
   async remove(@Req() request: any, @Param('id') id: string) {
     return { data: await this.notifications.remove(this.customerId(request), id) };
   }
+
+  @Delete()
+  async removeAll(@Req() request: any) {
+    return { data: await this.notifications.removeAll(this.customerId(request)) };
+  }
 }

@@ -122,6 +122,14 @@ export class QueueNotificationService {
     return { deleted: true };
   }
 
+  async removeAll(customerId: string) {
+    const result = await this.notificationsModel.updateMany(
+      { customer_id: customerId, deletedAt: null },
+      { $set: { deletedAt: new Date() } },
+    );
+    return { deleted: result.modifiedCount };
+  }
+
   @Cron(CronExpression.EVERY_MINUTE)
   async checkWaitTimes() {
     this.logger.debug('Checking queue wait times...');
