@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -80,7 +80,7 @@ export class QueueNotificationService {
 
   list(customerId: string, page = 1, limit = 30) {
     return this.notificationsModel
-      .find({ customer_id: customerId })
+      .find({ customer_id: customerId, deletedAt: null })
       .sort({ createdAt: -1 })
       .skip((Math.max(1, page) - 1) * Math.min(100, limit))
       .limit(Math.min(100, limit))
@@ -88,12 +88,16 @@ export class QueueNotificationService {
   }
 
   unreadCount(customerId: string) {
-    return this.notificationsModel.countDocuments({ customer_id: customerId, isRead: false });
+    return this.notificationsModel.countDocuments({
+      customer_id: customerId,
+      isRead: false,
+      deletedAt: null,
+    });
   }
 
   markRead(customerId: string, notificationId: string) {
     return this.notificationsModel.findOneAndUpdate(
-      { _id: notificationId, customer_id: customerId },
+      { _id: notificationId, customer_id: customerId, deletedAt: null },
       { isRead: true },
       { new: true },
     );
@@ -101,14 +105,20 @@ export class QueueNotificationService {
 
   async markAllRead(customerId: string) {
     const result = await this.notificationsModel.updateMany(
-      { customer_id: customerId, isRead: false },
+      { customer_id: customerId, isRead: false, deletedAt: null },
       { isRead: true },
     );
     return { updated: result.modifiedCount };
   }
 
   async remove(customerId: string, notificationId: string) {
-    await this.notificationsModel.deleteOne({ _id: notificationId, customer_id: customerId });
+    const result = await this.notificationsModel.updateOne(
+      { _id: notificationId, customer_id: customerId, deletedAt: null },
+      { $set: { deletedAt: new Date() } },
+    );
+    if (result.modifiedCount !== 1) {
+      throw new NotFoundException('Notification not found');
+    }
     return { deleted: true };
   }
 

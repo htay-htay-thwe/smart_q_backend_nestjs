@@ -23,6 +23,9 @@ export class Notification {
   @Prop({ default: false, index: true })
   isRead: boolean;
 
+  @Prop({ type: Date, default: null, index: true })
+  deletedAt?: Date | null;
+
   @Prop({ type: Object, default: {} })
   data: Record<string, string>;
 }
