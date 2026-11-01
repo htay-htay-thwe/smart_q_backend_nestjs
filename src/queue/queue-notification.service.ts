@@ -98,7 +98,7 @@ export class QueueNotificationService {
   async markRead(customerId: string, notificationId: string) {
     const notification = await this.notificationsModel.findOneAndUpdate(
       { _id: notificationId, customer_id: customerId, deletedAt: null },
-      { isRead: true },
+      { $set: { isRead: true, readAt: new Date() } },
       { new: true },
     );
     if (!notification) {
@@ -110,7 +110,7 @@ export class QueueNotificationService {
   async markAllRead(customerId: string) {
     const result = await this.notificationsModel.updateMany(
       { customer_id: customerId, isRead: false, deletedAt: null },
-      { isRead: true },
+      { $set: { isRead: true, readAt: new Date() } },
     );
     return { updated: result.modifiedCount };
   }
